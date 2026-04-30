@@ -623,12 +623,8 @@ class MiniMapNavigator:
 
         next_room_direction = None
         if current_room is not None and target_room is not None:
-            target_marker = room_info.get(f"{target_kind}_marker") if target_kind else None
-            if current_marker is not None and target_marker is not None:
-                next_room_direction = self._marker_direction(current_marker, target_marker)
-            if next_room_direction is None:
-                route_priority = self._route_priority(current_room, target_room)
-                next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+            route_priority = self._route_priority(current_room, target_room)
+            next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
 
         selected_door_center = None
         if next_room_direction:

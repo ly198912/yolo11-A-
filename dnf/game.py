@@ -446,9 +446,14 @@ class Game:
         if not self._player_xywh:
             return
 
-        if abs(obj_box[0] - self._player_xywh[0]) < self._move_x and abs(obj_box[1] - self._player_xywh[1]) < self._move_y:
-            self._key_press("x")
+        target_x = obj_box[0]
+        target_y = obj_box[1]
+        dx = target_x - self._player_xywh[0]
+        dy = target_y - self._player_xywh[1]
+
+        if abs(dx) <= 12 and abs(dy) <= 12:
             self._release_cached_action()
+            self._key_press("x")
             return
 
         direction = self._get_direction(obj_box)
@@ -669,7 +674,7 @@ class Game:
             self._release_cached_action()
             return
 
-        fallback_direction = self.NO_TARGET_FALLBACK_DIRECTION
+        fallback_direction = self._current_door_direction() or self.NO_TARGET_FALLBACK_DIRECTION
         if fallback_direction:
             if self._should_block_backtrack_direction(fallback_direction):
                 logger.warning("fallback direction {} points to entry side, hold position", fallback_direction)

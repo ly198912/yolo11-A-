@@ -20,7 +20,7 @@ from loguru import logger
 
 from dnf.game import Game
 from dnf.minimap_nav import MiniMapNavigator
-from dnf.ui_detector import handle_retry_challenge_prompt
+from dnf.ui_detector import handle_retry_challenge_prompt, handle_reward_selection_prompt
 
 temp = pathlib.PosixPath
 pathlib.PosixPath = pathlib.WindowsPath
@@ -103,11 +103,11 @@ def _get_client_region(hwnd: int) -> Tuple[int, int, int, int]:
     return left, top, width, height
 
 
-def _capture_client(hwnd: int) -> Tuple[np.ndarray, Tuple[int, int]]:
+def _capture_client(hwnd: int) -> Tuple[np.ndarray, Tuple[int, int], Tuple[int, int]]:
     left, top, width, height = _get_client_region(hwnd)
     img = pyautogui.screenshot(region=(left, top, width, height))
     img_np = np.array(img)
-    return img_np, (width, height)
+    return img_np, (width, height), (left, top)
 
 
 def main() -> None:
@@ -121,13 +121,13 @@ def main() -> None:
     while True:
         start_time = time.time()
         try:
-            img_np, (width, height) = _capture_client(hwnd)
+            img_np, (width, height), screen_origin = _capture_client(hwnd)
         except Exception as exc:
             logger.exception("截图失败: {}", exc)
             time.sleep(0.2)
             continue
 
-        if handle_retry_challenge_prompt(img_np):
+        if handle_reward_selection_prompt(img_np, screen_origin) or handle_retry_challenge_prompt(img_np, screen_origin):
             logger.info("处理时间: {}", time.time() - start_time)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break

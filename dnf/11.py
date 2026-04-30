@@ -42,4 +42,4 @@ def extract_frames(video_path, output_folder, interval_seconds=1):
 
 
 # --- 使用示例 ---
-extract_frames(r"D:\yolo\yolo11\dnf\snd.mp4", "extracted_images", interval_seconds=2)
+extract_frames(r"D:\yolo\yolo11\dnf\shfn.mp4", "extracted_images", interval_seconds=2)

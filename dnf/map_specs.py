@@ -40,11 +40,12 @@ MAP_SPECS: Dict[str, MapSpec] = {
     "haibolun": MapSpec(
         name="haibolun",
         crop_rect_1067=(966, 52, 1056, 124),
-        crop_rect_800=None,
-        minimap_width=90,
-        minimap_height=72,
+        crop_rect_800=(640, 57, 780, 137),
+        minimap_width=140,
+        minimap_height=80,
         rows=4,
         cols=5,
         room_grid=_all_walkable(4, 5),
+        room_rect_800=(665, 82, 779, 136),
     ),
 }
