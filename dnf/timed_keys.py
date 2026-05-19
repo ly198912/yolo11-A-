@@ -4,12 +4,12 @@ import os
 import random
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Callable, Iterable, Optional, Sequence
+from typing import Callable
 
 import pydirectinput
 from loguru import logger
-
 
 DEFAULT_TIMED_KEY_SPEC = "d:5.0-6.0:1.0-1.5;s:12.0-13.0:1.0-1.5;e:6.0-7.0:1.0-1.5"
 
@@ -60,7 +60,7 @@ class TimedKeyScheduler:
         self,
         rules: Sequence[TimedKeyRule],
         *,
-        rng: Optional[random.Random] = None,
+        rng: random.Random | None = None,
         monotonic: Callable[[], float] = time.monotonic,
         sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
@@ -70,7 +70,7 @@ class TimedKeyScheduler:
         self._sleeper = sleeper
         self._stop_event = threading.Event()
         self._pause_event = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
     @property
     def rules(self) -> Sequence[TimedKeyRule]:
@@ -115,19 +115,13 @@ class TimedKeyScheduler:
             pydirectinput.keyUp(rule.key)
 
     def _run(self) -> None:
-        next_times = {
-            rule.key: self._monotonic() + rule.next_interval(self._rng)
-            for rule in self._rules
-        }
+        next_times = {rule.key: self._monotonic() + rule.next_interval(self._rng) for rule in self._rules}
 
         while not self._stop_event.is_set():
             if self._pause_event.is_set():
                 self.release_keys()
                 self._stop_event.wait(0.1)
-                next_times = {
-                    rule.key: self._monotonic() + rule.next_interval(self._rng)
-                    for rule in self._rules
-                }
+                next_times = {rule.key: self._monotonic() + rule.next_interval(self._rng) for rule in self._rules}
                 continue
 
             now = self._monotonic()
@@ -154,7 +148,7 @@ class TimedKeyScheduler:
         self._sleeper(0.03)
 
 
-def build_timed_key_scheduler_from_env() -> Optional[TimedKeyScheduler]:
+def build_timed_key_scheduler_from_env() -> TimedKeyScheduler | None:
     if os.getenv("DNF_TIMED_KEYS_ENABLED", "1") != "1":
         return None
 
