@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import heapq
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Sequence, Tuple
 
-
-GridPoint = Tuple[int, int]
+GridPoint = tuple[int, int]
 
 
 @dataclass(order=True)
@@ -15,7 +14,7 @@ class _Node:
     position: GridPoint = field(compare=False)
     g: int = field(default=0, compare=False)
     h: int = field(default=0, compare=False)
-    parent: Optional["_Node"] = field(default=None, compare=False)
+    parent: _Node | None = field(default=None, compare=False)
 
 
 def heuristic(a: GridPoint, b: GridPoint) -> int:
@@ -39,11 +38,13 @@ def _neighbors(position: GridPoint, grid: Sequence[Sequence[int]], priority: str
             yield (nx, ny)
 
 
-def a_star(grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, priority: str = "right") -> Optional[List[GridPoint]]:
+def a_star(
+    grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, priority: str = "right"
+) -> list[GridPoint] | None:
     if start == end:
         return [start]
 
-    open_list: List[_Node] = []
+    open_list: list[_Node] = []
     push_order = 0
     start_node = _Node(f=0, order=push_order, position=start, g=0, h=heuristic(start, end), parent=None)
     start_node.f = start_node.g + start_node.h
@@ -58,8 +59,8 @@ def a_star(grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, prio
         closed.add(current.position)
 
         if current.position == end:
-            path: List[GridPoint] = []
-            node: Optional[_Node] = current
+            path: list[GridPoint] = []
+            node: _Node | None = current
             while node is not None:
                 path.append(node.position)
                 node = node.parent
@@ -67,7 +68,7 @@ def a_star(grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, prio
 
         for next_pos in _neighbors(current.position, grid, priority):
             next_g = current.g + 1
-            if next_g >= best_g.get(next_pos, 10 ** 9):
+            if next_g >= best_g.get(next_pos, 10**9):
                 continue
             best_g[next_pos] = next_g
             next_h = heuristic(next_pos, end)
@@ -86,7 +87,7 @@ def a_star(grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, prio
     return None
 
 
-def judge_direction(starting_point: GridPoint, end_point: GridPoint) -> Optional[str]:
+def judge_direction(starting_point: GridPoint, end_point: GridPoint) -> str | None:
     x1, y1 = starting_point
     x2, y2 = end_point
     if x2 > x1:
@@ -100,7 +101,9 @@ def judge_direction(starting_point: GridPoint, end_point: GridPoint) -> Optional
     return None
 
 
-def next_direction(grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, priority: str = "right") -> Optional[str]:
+def next_direction(
+    grid: Sequence[Sequence[int]], start: GridPoint, end: GridPoint, priority: str = "right"
+) -> str | None:
     path = a_star(grid, start, end, priority=priority)
     if not path or len(path) < 2:
         return None
