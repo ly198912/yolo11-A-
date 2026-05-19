@@ -4,13 +4,11 @@ import os
 import random
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
 import pydirectinput
 from loguru import logger
-
 
 RETRY_COOLDOWN_SECONDS = 3.0
 REWARD_COOLDOWN_SECONDS = 1.0
@@ -21,10 +19,10 @@ REWARD_CHECK_INTERVAL_SECONDS = float(os.getenv("DNF_REWARD_CHECK_INTERVAL", "0.
 _last_retry_press_time = 0.0
 _last_reward_press_time = 0.0
 _last_reward_miss_time = 0.0
-_reward_template: Optional[Tuple[np.ndarray, np.ndarray]] = None
+_reward_template: tuple[np.ndarray, np.ndarray] | None = None
 _reward_template_unavailable = False
 
-ScreenOrigin = Tuple[int, int]
+ScreenOrigin = tuple[int, int]
 
 
 def _press_numpad_6() -> None:
@@ -64,7 +62,7 @@ def _retry_prompt_roi(frame_rgb: np.ndarray) -> np.ndarray:
     return frame_rgb[y1:y2, x1:x2]
 
 
-def _load_reward_template() -> Optional[Tuple[np.ndarray, np.ndarray]]:
+def _load_reward_template() -> tuple[np.ndarray, np.ndarray] | None:
     global _reward_template, _reward_template_unavailable
 
     if _reward_template is not None:
@@ -112,14 +110,7 @@ def _is_reward_template_like(frame_rgb: np.ndarray) -> bool:
 
     x, y = max_loc
     matched_roi = frame_rgb[y : y + template_height, x : x + template_width]
-    mean_diff = float(
-        np.mean(
-            np.abs(
-                matched_roi.astype(np.float32)
-                - template_rgb.astype(np.float32)
-            )
-        )
-    )
+    mean_diff = float(np.mean(np.abs(matched_roi.astype(np.float32) - template_rgb.astype(np.float32))))
     if mean_diff > REWARD_TEMPLATE_MEAN_DIFF_MAX:
         return False
 
@@ -127,14 +118,14 @@ def _is_reward_template_like(frame_rgb: np.ndarray) -> bool:
     return True
 
 
-def _yellow_text_stats(roi_rgb: np.ndarray) -> Tuple[int, int, Optional[Tuple[int, int, int, int]]]:
+def _yellow_text_stats(roi_rgb: np.ndarray) -> tuple[int, int, tuple[int, int, int, int] | None]:
     hsv = cv2.cvtColor(roi_rgb, cv2.COLOR_RGB2HSV)
     yellow_mask = cv2.inRange(hsv, np.array([15, 80, 110]), np.array([42, 255, 255]))
     yellow_mask = cv2.morphologyEx(yellow_mask, cv2.MORPH_OPEN, np.ones((2, 2), dtype=np.uint8))
     return _text_stats_from_mask(yellow_mask)
 
 
-def _text_stats_from_mask(mask: np.ndarray) -> Tuple[int, int, Optional[Tuple[int, int, int, int]]]:
+def _text_stats_from_mask(mask: np.ndarray) -> tuple[int, int, tuple[int, int, int, int] | None]:
     count, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
 
     text_pixels = int(cv2.countNonZero(mask))
