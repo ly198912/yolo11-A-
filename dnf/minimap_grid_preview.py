@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
 from dnf.minimap_nav import MiniMapNavigator
 
 
-MAP_NAME = "haibolun"
+MAP_NAME = "universal"
 WINDOW_TITLE_KEYWORD = "地下城与勇士"
 WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}
 PREVIEW_WINDOW_NAME = "dnf-minimap-grid-preview"
@@ -114,16 +114,24 @@ def _draw_grid(frame_bgr: np.ndarray, navigator: MiniMapNavigator) -> np.ndarray
         cv2.circle(output, (x, y), 4, color, -1)
         cv2.putText(output, label, (x + 5, y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
 
-    text = (
-        f"map={navigator.map_name} current={room_info['current_room']} "
-        f"query={room_info['query_room']} boss={room_info['boss_room']}"
-    )
-    cv2.putText(output, text, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+    room_outside_crop = rx1 < cx1 or ry1 < cy1 or rx2 > cx2 or ry2 > cy2
+    text_lines = [
+        f"map={navigator.map_name} frame={width}x{height}",
+        f"crop={cx1},{cy1},{cx2},{cy2}  room={rx1},{ry1},{rx2},{ry2}",
+        f"current={room_info['current_room']} query={room_info['query_room']} boss={room_info['boss_room']}",
+    ]
+    if room_outside_crop:
+        text_lines.append("ROOM OUTSIDE CROP: white rect must stay inside green rect")
+
+    for index, text in enumerate(text_lines):
+        y = 24 + index * 20
+        color = (0, 0, 255) if "ROOM OUTSIDE" in text else (255, 255, 255)
+        cv2.putText(output, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1, cv2.LINE_AA)
     return output
 
 
 def main() -> None:
-    map_name = os.getenv("DNF_PREVIEW_MAP_NAME", MAP_NAME)
+    map_name = os.getenv("DNF_PREVIEW_MAP_NAME", os.getenv("DNF_MAP_NAME", MAP_NAME))
     navigator = MiniMapNavigator(map_name)
     hwnd = _find_dnf_window()
 

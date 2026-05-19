@@ -14,6 +14,7 @@ class DoorCandidate:
 
 
 def opposite_direction(direction: Optional[str]) -> Optional[str]:
+    direction = direction.lower() if direction else None
     mapping = {
         "left": "right",
         "right": "left",
@@ -34,6 +35,7 @@ def _axis_offsets(player: Point, door: Point) -> Tuple[float, float]:
 
 
 def _direction_match(expected_direction: str, dx: float, dy: float, margin: float) -> bool:
+    expected_direction = expected_direction.lower()
     parts = set(expected_direction.split("_"))
     if "right" in parts and dx <= margin:
         return False
@@ -58,6 +60,7 @@ def choose_best_door(
     if expected_direction is None:
         return min(doors, key=lambda item: abs(item.center[0] - player_center[0]) + abs(item.center[1] - player_center[1]))
 
+    expected_direction = expected_direction.lower()
     reverse_direction = opposite_direction(last_direction)
     candidates: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []
     fallback: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []

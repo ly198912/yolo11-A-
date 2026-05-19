@@ -11,28 +11,24 @@ import numpy as np
 from loguru import logger
 
 from dnf.door_strategy import DoorCandidate, choose_best_door
-from dnf.map_specs import MAP_SPECS, MapSpec
+from dnf.map_specs import MAP_SPECS, MapSpec, Rect
 from dnf.minimap_astar import next_direction
 
 
 Point = Tuple[int, int]
-Rect = Tuple[int, int, int, int]
 ScoredMatch = Tuple[float, float, float, str]
 VariantKey = Tuple[str, bool, Tuple[float, ...]]
 
 
 QUERY_TEMPLATE_FILES = {
     "query": "map_query.png",
-    "query1": "map_query1.png",
-    "query3": "map_query3.png",
-    "query4": "map_query4.png",
-    "query5": "map_query5.png",
+
 }
 
 MARKER_THRESHOLDS = {
     "hero": 0.58,
     "boss": 0.68,
-    "query": 0.50,
+    "query": 0.70,
     "elite": 0.68,
     "special": 0.64,
     "down": 0.58,
@@ -40,6 +36,9 @@ MARKER_THRESHOLDS = {
 
 ROBUST_TEMPLATE_SCALES = (0.88, 0.94, 1.0, 1.06, 1.12)
 AUTO_MAP_SWITCH_MARGIN = 0.08
+AUTO_MAP_MIN_SCORE = 0.55
+AUTO_MAP_CONFIRM_FRAMES = 2
+LAYOUT_TEMPLATE_THRESHOLD = float(os.getenv("DNF_LAYOUT_TEMPLATE_THRESHOLD", "0.72"))
 QUERY_COLOR_FALLBACK_ENABLED = os.getenv("DNF_QUERY_COLOR_FALLBACK", "0") == "1"
 
 
@@ -90,13 +89,14 @@ def _clamp_rect(rect: Rect, width: int, height: int) -> Rect:
 
 
 class MiniMapNavigator:
-    def __init__(self, map_name: str = "generic", assets_dir: Optional[Path] = None, threshold: float = 0.7):
+    def __init__(self, map_name: str = "auto", assets_dir: Optional[Path] = None, threshold: float = 0.7):
         self.auto_map = map_name == "auto"
         if self.auto_map or map_name not in MAP_SPECS:
-            map_name = "generic"
+            map_name = "universal"
         self.threshold = threshold
         self._set_active_map(map_name)
         self.assets_dir = assets_dir or (Path(__file__).resolve().parent / "res")
+        self.layout_templates = self._load_layout_templates()
         self.templates = {
             "hero": self._load_template("map_hero.png"),
             "boss": self._load_template("map_query2.png"),
@@ -117,6 +117,8 @@ class MiniMapNavigator:
         self._debug_scores_interval = 5
         self._last_room_rect: Optional[Rect] = None
         self._auto_scores_cache: Dict[str, float] = {}
+        self._auto_candidate_map: Optional[str] = None
+        self._auto_candidate_count = 0
 
     def _set_active_map(self, map_name: str) -> None:
         self.map_name = map_name
@@ -143,6 +145,9 @@ class MiniMapNavigator:
             or self.spec.room_rect_800
         )
 
+    def _uses_universal_map(self) -> bool:
+        return getattr(self, "map_name", "") == "universal"
+
     def _load_template(self, filename: str) -> np.ndarray:
         path = self.assets_dir / filename
         image = cv2.imread(str(path), cv2.IMREAD_COLOR)
@@ -156,6 +161,9 @@ class MiniMapNavigator:
             return None
         image = cv2.imread(str(path), cv2.IMREAD_COLOR)
         return image
+
+    def _load_layout_templates(self) -> Dict[str, np.ndarray]:
+        return {}
 
     def _scaled_rects_for_spec(self, frame: np.ndarray, spec: MapSpec) -> Tuple[Rect, Optional[Rect]]:
         frame_h, frame_w = frame.shape[:2]
@@ -183,6 +191,20 @@ class MiniMapNavigator:
         _, max_val, _, _ = cv2.minMaxLoc(result)
         return float(max_val)
 
+    def _score_layout_templates(self, frame: np.ndarray) -> Dict[str, float]:
+        if not self.layout_templates:
+            return {}
+
+        frame_h, frame_w = frame.shape[:2]
+        search_region = frame[:, max(0, int(frame_w * 0.45)):frame_w]
+        scores: Dict[str, float] = {}
+        for map_name, template in self.layout_templates.items():
+            if template.shape[0] > search_region.shape[0] or template.shape[1] > search_region.shape[1]:
+                scores[map_name] = 0.0
+                continue
+            scores[map_name] = self._template_score(search_region, template)
+        return scores
+
     def _score_map_spec(self, frame: np.ndarray, spec: MapSpec) -> float:
         frame_h, frame_w = frame.shape[:2]
         x1, y1, x2, y2 = _clamp_rect(self._scaled_rects_for_spec(frame, spec)[0], frame_w, frame_h)
@@ -201,17 +223,59 @@ class MiniMapNavigator:
         return float(sum(scores[:3]) / min(3, len(scores)))
 
     def _select_auto_map(self, frame: np.ndarray) -> None:
-        if not self.auto_map:
+        if not self.auto_map or self._uses_universal_map():
             return
+
+        layout_scores = self._score_layout_templates(frame)
+        if layout_scores:
+            best_layout_map = max(layout_scores, key=layout_scores.get)
+            best_layout_score = layout_scores[best_layout_map]
+            self._auto_scores_cache = layout_scores
+            if best_layout_score >= LAYOUT_TEMPLATE_THRESHOLD:
+                if best_layout_map == self.map_name:
+                    self._auto_candidate_map = None
+                    self._auto_candidate_count = 0
+                    return
+                if best_layout_map == self._auto_candidate_map:
+                    self._auto_candidate_count += 1
+                else:
+                    self._auto_candidate_map = best_layout_map
+                    self._auto_candidate_count = 1
+
+                if self._auto_candidate_count >= AUTO_MAP_CONFIRM_FRAMES:
+                    logger.info("auto minimap layout switched: {} -> {}, scores={}", self.map_name, best_layout_map, layout_scores)
+                    self._set_active_map(best_layout_map)
+                    self._auto_candidate_map = None
+                    self._auto_candidate_count = 0
+                return
 
         scores = {name: self._score_map_spec(frame, spec) for name, spec in MAP_SPECS.items()}
         self._auto_scores_cache = scores
         best_map = max(scores, key=scores.get)
         current_score = scores.get(self.map_name, 0.0)
         best_score = scores[best_map]
-        if best_map != self.map_name and best_score >= current_score + AUTO_MAP_SWITCH_MARGIN:
+
+        if best_score < AUTO_MAP_MIN_SCORE or best_map == self.map_name:
+            self._auto_candidate_map = None
+            self._auto_candidate_count = 0
+            return
+
+        if best_score < current_score + AUTO_MAP_SWITCH_MARGIN:
+            self._auto_candidate_map = None
+            self._auto_candidate_count = 0
+            return
+
+        if best_map == self._auto_candidate_map:
+            self._auto_candidate_count += 1
+        else:
+            self._auto_candidate_map = best_map
+            self._auto_candidate_count = 1
+
+        if self._auto_candidate_count >= AUTO_MAP_CONFIRM_FRAMES:
             logger.info("auto minimap switched: {} -> {}, scores={}", self.map_name, best_map, scores)
             self._set_active_map(best_map)
+            self._auto_candidate_map = None
+            self._auto_candidate_count = 0
 
     def _scaled_crop_and_room_rect(self, frame: np.ndarray) -> Tuple[Rect, Optional[Rect]]:
         frame_h, frame_w = frame.shape[:2]
@@ -363,6 +427,21 @@ class MiniMapNavigator:
                 return room, (x, y)
         return None, None
 
+    def _first_marker_room_and_center_from_matches(
+        self,
+        matches: Sequence[ScoredMatch],
+        minimap: np.ndarray,
+        excluded_markers: Sequence[Optional[Tuple[float, float]]] = (),
+        min_distance: float = 8.0,
+    ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+        excluded = [marker for marker in excluded_markers if marker is not None]
+        min_distance_sq = min_distance * min_distance
+        for _, x, y, _ in matches:
+            if any((x - ex) * (x - ex) + (y - ey) * (y - ey) < min_distance_sq for ex, ey in excluded):
+                continue
+            return self.compute_room_id(x, y, minimap), (x, y)
+        return None, None
+
     def _match_query_by_color(self, minimap: np.ndarray, current_room: Optional[Point]) -> List[ScoredMatch]:
         if current_room is None:
             return []
@@ -455,11 +534,6 @@ class MiniMapNavigator:
             current_marker = (x, y)
             current_room = self.compute_room_id(x, y, minimap)
 
-        boss_matches = self._match_template(minimap, self.templates["boss"], threshold=MARKER_THRESHOLDS["boss"])
-        if boss_matches:
-            boss_marker = boss_matches[0]
-            boss_room = self.compute_room_id(*boss_marker, minimap)
-
         elite_matches = self._match_template(minimap, self.templates["elite"], threshold=MARKER_THRESHOLDS["elite"])
         if elite_matches:
             elite_marker = elite_matches[0]
@@ -480,18 +554,38 @@ class MiniMapNavigator:
         query_names = [name for name in QUERY_TEMPLATE_FILES if name in self.templates]
         query_matches = self._match_marker(minimap, query_names, "query")
         if query_matches:
-            query_room, query_marker = self._first_room_and_center_from_matches(
-                query_matches,
-                minimap,
-                excluded_rooms=(current_room, boss_room, elite_room, down_room),
-            )
-        if query_room is None and QUERY_COLOR_FALLBACK_ENABLED:
+            if self._uses_universal_map():
+                query_room, query_marker = self._first_marker_room_and_center_from_matches(
+                    query_matches,
+                    minimap,
+                    excluded_markers=(current_marker, elite_marker, down_marker),
+                )
+            else:
+                query_room, query_marker = self._first_room_and_center_from_matches(
+                    query_matches,
+                    minimap,
+                    excluded_rooms=(current_room, elite_room, down_room),
+                )
+
+        boss_matches = self._match_template(minimap, self.templates["boss"], threshold=MARKER_THRESHOLDS["boss"])
+        if boss_matches:
+            boss_marker = boss_matches[0]
+            boss_room = self.compute_room_id(*boss_marker, minimap)
+
+        if query_room is None and boss_room is None and QUERY_COLOR_FALLBACK_ENABLED:
             query_color_matches = self._match_query_by_color(minimap, current_room)
-            query_room, query_marker = self._first_room_and_center_from_matches(
-                query_color_matches,
-                minimap,
-                excluded_rooms=(current_room, boss_room, elite_room, down_room),
-            )
+            if self._uses_universal_map():
+                query_room, query_marker = self._first_marker_room_and_center_from_matches(
+                    query_color_matches,
+                    minimap,
+                    excluded_markers=(current_marker, boss_marker, elite_marker, down_marker),
+                )
+            else:
+                query_room, query_marker = self._first_room_and_center_from_matches(
+                    query_color_matches,
+                    minimap,
+                    excluded_rooms=(current_room, boss_room, elite_room, down_room),
+                )
 
         return {
             "current_room": current_room,
@@ -556,12 +650,10 @@ class MiniMapNavigator:
     ) -> Tuple[Optional[str], Optional[Point]]:
         candidates: List[Tuple[str, Optional[Point]]] = []
         if prefer_special_room:
-            candidates.extend([
-                ("query", query_room),
-                ("boss", boss_room),
-            ])
-        else:
+            candidates.append(("query", query_room))
             candidates.append(("boss", boss_room))
+            candidates.append(("elite", elite_room))
+            candidates.append(("down", down_room))
 
         for kind, room in candidates:
             if room is None:
@@ -598,11 +690,29 @@ class MiniMapNavigator:
             return f"{horizontal}_{vertical}"
         return horizontal or vertical
 
+    def _target_marker_for_kind(
+        self,
+        target_kind: Optional[str],
+        room_info: Dict[str, object],
+    ) -> Optional[Tuple[float, float]]:
+        marker_by_kind = {
+            "query": room_info.get("query_marker"),
+            "boss": room_info.get("boss_marker"),
+            "elite": room_info.get("elite_marker"),
+            "down": room_info.get("down_marker"),
+        }
+        marker = marker_by_kind.get(target_kind or "")
+        if marker is None:
+            return None
+        x, y = marker  # type: ignore[misc]
+        return float(x), float(y)
+
     def build_route_snapshot(
         self,
         frame_bgr: np.ndarray,
         detection_objects: Sequence[dict],
         prefer_special_room: bool = True,
+        include_debug_scores: bool = True,
     ) -> RouteSnapshot:
         room_info = self.detect_room_markers(frame_bgr)
         current_room = room_info["current_room"]
@@ -611,6 +721,7 @@ class MiniMapNavigator:
         elite_room = room_info["elite_room"]
         down_room = room_info["down_room"]
         current_marker = room_info.get("current_marker")
+        query_marker = room_info.get("query_marker")
 
         target_kind, target_room = self._pick_target(
             current_room=current_room,
@@ -620,32 +731,58 @@ class MiniMapNavigator:
             boss_room=boss_room,
             prefer_special_room=prefer_special_room,
         )
+        if target_kind is None and prefer_special_room and current_marker is not None:
+            marker_targets = (
+                ("query", query_room, query_marker),
+                ("boss", boss_room, room_info.get("boss_marker")),
+                ("elite", elite_room, room_info.get("elite_marker")),
+                ("down", down_room, room_info.get("down_marker")),
+            )
+            for kind, room, marker in marker_targets:
+                if marker is None:
+                    continue
+                if self._marker_direction(current_marker, marker) is None:  # type: ignore[arg-type]
+                    continue
+                target_kind = kind
+                target_room = room
+                break
 
         next_room_direction = None
-        if current_room is not None and target_room is not None:
+        target_marker = self._target_marker_for_kind(target_kind, room_info)
+        if current_marker is not None and target_marker is not None:
+            next_room_direction = self._marker_direction(current_marker, target_marker)
+        elif current_room is not None and query_room is None and target_room is None:
+            target_kind = "query_missing"
+            target_room = None
+        elif current_room is not None and target_room is not None:
             route_priority = self._route_priority(current_room, target_room)
             next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
 
         selected_door_center = None
-        if next_room_direction:
-            player_center = None
-            for item in detection_objects:
-                if "player" in item:
-                    x, y, w, h = item["player"]["xywh"]
-                    player_center = (x + w / 2.0, y + h / 2.0)
-                    break
-            if player_center is not None:
-                selected_door = choose_best_door(
-                    self._door_candidates_from_objects(detection_objects),
-                    player_center=player_center,
-                    expected_direction=next_room_direction,
-                    last_direction=self.last_direction,
-                )
-                if selected_door is not None:
-                    selected_door_center = selected_door.center
-                    self.last_direction = next_room_direction
+        player_center = None
+        for item in detection_objects:
+            if "player" in item:
+                x, y, w, h = item["player"]["xywh"]
+                player_center = (x + w / 2.0, y + h / 2.0)
+                break
+        door_candidates = self._door_candidates_from_objects(detection_objects)
 
-        debug_scores = self.get_debug_scores(frame_bgr)
+        def select_door(direction: Optional[str]) -> Optional[DoorCandidate]:
+            if direction is None or player_center is None:
+                return None
+            return choose_best_door(
+                door_candidates,
+                player_center=player_center,
+                expected_direction=direction,
+                last_direction=getattr(self, "last_direction", None),
+            )
+
+        selected_door = select_door(next_room_direction)
+        if selected_door is not None:
+            selected_door_center = selected_door.center
+            self.last_direction = next_room_direction
+
+        debug_scores = self.get_debug_scores(frame_bgr) if include_debug_scores else None
         return RouteSnapshot(
             current_room=current_room,
             boss_room=boss_room,

@@ -201,9 +201,14 @@ calibration_*.npy
 *.raw
 
 # DNF brush runtime assets
+!dnf/best.pt
+!dnf/ds.pt
+!dnf/ldd.pt
+!dnf/pre.pt
 !dnf/shzn.pt
 !dnf/res/
 !dnf/res/*.png
+!dnf/res/*.ico
 
 # Training logs
 args.yaml

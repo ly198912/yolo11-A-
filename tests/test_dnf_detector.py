@@ -55,13 +55,14 @@ def test_detector_uses_yolo11_predict_and_preserves_output_shape(monkeypatch) ->
     annotated, objects = detector.detect(image_rgb)
 
     assert annotated.shape == image_rgb.shape
-    assert objects == [{"monster": {"xywh": [30.0, 50.0, 40.0, 60.0], "conf": 0.88}}]
+    assert objects == [{"monster": {"xywh": [10.0, 20.0, 40.0, 60.0], "conf": 0.88}}]
 
     model = created_models[0]
     assert Path(model.weights).as_posix().endswith("dnf/shzn.pt")
     assert model.predict_calls[0]["source"].shape == image_rgb.shape
-    assert model.predict_calls[0]["imgsz"] == 640
-    assert model.predict_calls[0]["conf"] == 0.75
+    assert model.predict_calls[0]["imgsz"] == 512
+    assert model.predict_calls[0]["conf"] == 0.35
     assert model.predict_calls[0]["iou"] == 0.45
     assert model.predict_calls[0]["device"] == "cpu"
     assert model.predict_calls[0]["half"] is False
+    assert model.predict_calls[0]["max_det"] == 40

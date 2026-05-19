@@ -25,27 +25,26 @@ def _all_walkable(rows: int, cols: int) -> List[List[int]]:
     return [[0 for _ in range(cols)] for _ in range(rows)]
 
 
+UNIVERSAL_MINIMAP_SPEC = MapSpec(
+    name="universal",
+    # Large top-right search box matching the red frame in 800x600 captures.
+    # It intentionally contains the full minimap plus surrounding UI so small
+    # minimap layout shifts do not require per-map rectangle tuning.
+    crop_rect_1067=(797, 23, 1066, 192),
+    crop_rect_800=(598, 23, 799, 192),
+    minimap_width=201,
+    minimap_height=169,
+    # The logical room grid should cover the minimap panel, not the full
+    # oversized search box. 5x6 is the broad common room lattice used as a
+    # fallback; marker-to-marker routing remains the primary universal path.
+    rows=5,
+    cols=6,
+    room_grid=_all_walkable(5, 6),
+    room_rect_1067=(899, 29, 1059, 123),
+    room_rect_800=(674, 29, 794, 123),
+)
+
+
 MAP_SPECS: Dict[str, MapSpec] = {
-    "generic": MapSpec(
-        name="generic",
-        crop_rect_1067=(893, 52, 1055, 142),
-        crop_rect_800=(680, 57, 780, 155),
-        minimap_width=162,
-        minimap_height=90,
-        rows=5,
-        cols=9,
-        room_grid=_all_walkable(5, 9),
-        room_rect_800=(686, 82, 776, 151),
-    ),
-    "haibolun": MapSpec(
-        name="haibolun",
-        crop_rect_1067=(966, 52, 1056, 124),
-        crop_rect_800=(640, 57, 780, 137),
-        minimap_width=140,
-        minimap_height=80,
-        rows=4,
-        cols=5,
-        room_grid=_all_walkable(4, 5),
-        room_rect_800=(665, 82, 779, 136),
-    ),
+    "universal": UNIVERSAL_MINIMAP_SPEC,
 }
