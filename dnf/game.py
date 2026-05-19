@@ -1,21 +1,20 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 @File    : game.py
-@Desc    : DNF runtime actions with basic stuck recovery
+@Desc    : DNF runtime actions with basic stuck recovery.
 """
+
 from __future__ import annotations
 
 import os
 import random
 import time
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from collections.abc import Iterable, Sequence
 
 import pydirectinput
 from loguru import logger
 
-
-BoxDict = Dict[str, object]
+BoxDict = dict[str, object]
 
 
 def _env_float(name: str, default: float) -> float:
@@ -34,7 +33,7 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
-def _env_range(name: str, default: Tuple[float, float]) -> Tuple[float, float]:
+def _env_range(name: str, default: tuple[float, float]) -> tuple[float, float]:
     value = os.getenv(name)
     if not value:
         return default
@@ -57,25 +56,25 @@ def _env_key(name: str, default: str) -> str:
 
 class Game:
     NO_TARGET_FALLBACK_DIRECTION = "RIGHT"
-    _action_cache: Optional[str] = None
-    _player: Optional[BoxDict] = None
-    _pre_player: Optional[BoxDict] = None
+    _action_cache: str | None = None
+    _player: BoxDict | None = None
+    _pre_player: BoxDict | None = None
     _index = 0
     _player_missing_count = 0
-    _position_history: List[Tuple[float, float]] = []
+    _position_history: list[tuple[float, float]] = []
     _stuck_count = 0
     _last_recover_time = 0.0
     _recover_step = 0
-    _last_player_center: Optional[Tuple[float, float]] = None
-    _room_entry_position: Optional[Tuple[float, float]] = None
+    _last_player_center: tuple[float, float] | None = None
+    _room_entry_position: tuple[float, float] | None = None
     _room_entry_time = 0.0
-    _flow_direction: Optional[str] = None
+    _flow_direction: str | None = None
     _entry_door_protect_seconds = _env_float("DNF_ENTRY_DOOR_PROTECT_SECONDS", 30.0)
     _entry_door_protect_radius = _env_float("DNF_ENTRY_DOOR_PROTECT_RADIUS", 280.0)
     _missing_player_recover_threshold = _env_int("DNF_MISSING_PLAYER_RECOVER_THRESHOLD", 10)
-    _route_search_direction: Optional[str] = None
+    _route_search_direction: str | None = None
     _route_search_phase = 0
-    _route_search_start: Optional[Tuple[float, float]] = None
+    _route_search_start: tuple[float, float] | None = None
     _route_search_x_amplitude = _env_float("DNF_ROUTE_SEARCH_X_AMPLITUDE", 32.0)
     _route_search_y_amplitude = _env_float("DNF_ROUTE_SEARCH_Y_AMPLITUDE", 6.0)
     _route_search_amplitude = _route_search_x_amplitude
@@ -85,19 +84,19 @@ class Game:
     _diagonal_y_ratio = _env_float("DNF_DIAGONAL_Y_RATIO", 0.35)
     _horizontal_edge_top_ratio = _env_float("DNF_HORIZONTAL_EDGE_TOP_RATIO", 0.22)
     _horizontal_edge_bottom_ratio = _env_float("DNF_HORIZONTAL_EDGE_BOTTOM_RATIO", 0.80)
-    _down_stuck_anchor: Optional[Tuple[float, float]] = None
+    _down_stuck_anchor: tuple[float, float] | None = None
     _down_stuck_since = 0.0
     _down_right_search_until = 0.0
-    _up_stuck_anchor: Optional[Tuple[float, float]] = None
+    _up_stuck_anchor: tuple[float, float] | None = None
     _up_stuck_since = 0.0
     _up_right_search_until = 0.0
-    _vertical_escape_direction: Optional[str] = None
-    _vertical_escape_target_y: Optional[float] = None
-    _vertical_escape_source_direction: Optional[str] = None
-    _right_search_anchor_x: Optional[float] = None
+    _vertical_escape_direction: str | None = None
+    _vertical_escape_target_y: float | None = None
+    _vertical_escape_source_direction: str | None = None
+    _right_search_anchor_x: float | None = None
     _right_search_until = 0.0
     _right_search_until_door = False
-    _active_route_direction: Optional[str] = None
+    _active_route_direction: str | None = None
     _action_cache_time = 0.0
     _down_stuck_seconds = _env_float("DNF_VERTICAL_STUCK_SECONDS", 0.6)
     _down_stuck_move_tolerance = _env_float("DNF_VERTICAL_STUCK_MOVE_TOLERANCE", 16.0)
@@ -130,13 +129,13 @@ class Game:
         width: int,
         height: int,
         direction,
-        selected_door_center: Optional[Tuple[float, float]] = None,
-        target_kind: Optional[str] = None,
+        selected_door_center: tuple[float, float] | None = None,
+        target_kind: str | None = None,
     ):
         self._obj = obj or []
         self._width = width
         self._height = height
-        self._player_xywh: Optional[List[float]] = None
+        self._player_xywh: list[float] | None = None
         self._attack_x = Game._monster_attack_range_x
         self._attack_y = Game._monster_attack_range_y
         self._move_x = 20
@@ -145,7 +144,7 @@ class Game:
         self._selected_door_center = selected_door_center
         self._target_kind = target_kind
 
-    def _current_door_direction(self) -> Optional[str]:
+    def _current_door_direction(self) -> str | None:
         if isinstance(self._direction, (list, tuple)):
             if not self._direction:
                 return None
@@ -156,13 +155,13 @@ class Game:
             return self._direction.strip().upper()
         return None
 
-    def _get_cls(self, cls_name: str) -> Optional[BoxDict]:
+    def _get_cls(self, cls_name: str) -> BoxDict | None:
         for item in self._obj:
             if cls_name in item:
                 return item[cls_name]
         return None
 
-    def _get_clss(self, cls_name: str) -> List[BoxDict]:
+    def _get_clss(self, cls_name: str) -> list[BoxDict]:
         result = []
         for item in self._obj:
             if cls_name in item:
@@ -182,7 +181,7 @@ class Game:
         cls._last_recover_time = 0.0
         cls._last_attack_time = 0.0
         cls._next_special_attack_time = 0.0
-        cls._next_extra_attack_time  = 0.0
+        cls._next_extra_attack_time = 0.0
         cls._active_route_direction = None
         cls._right_search_until_door = False
 
@@ -215,10 +214,10 @@ class Game:
         Game._action_cache = None
         Game._action_cache_time = 0.0
 
-    def _distance(self, a: Tuple[float, float], b: Tuple[float, float]) -> float:
+    def _distance(self, a: tuple[float, float], b: tuple[float, float]) -> float:
         return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
-    def _infer_flow_direction_from_spawn(self, player_center: Tuple[float, float]) -> Optional[str]:
+    def _infer_flow_direction_from_spawn(self, player_center: tuple[float, float]) -> str | None:
         x, y = player_center
         edge_scores = {
             "LEFT": x,
@@ -265,7 +264,7 @@ class Game:
                 Game._flow_direction,
             )
 
-    def _filter_backtrack_doors(self, doors: Sequence[BoxDict], direction_hint: Optional[str]) -> List[BoxDict]:
+    def _filter_backtrack_doors(self, doors: Sequence[BoxDict], direction_hint: str | None) -> list[BoxDict]:
         if not doors:
             return []
 
@@ -280,7 +279,7 @@ class Game:
         entry = Game._room_entry_position
         entry_side = self._reverse_direction(Game._flow_direction)
         direction_hint = direction_hint.upper() if direction_hint else None
-        filtered: List[BoxDict] = []
+        filtered: list[BoxDict] = []
         for door in doors:
             x, y, w, h = door["xywh"]
             center = (x + w / 2.0, y + h / 2.0)
@@ -310,9 +309,11 @@ class Game:
         return filtered
 
     def _is_entry_protected(self) -> bool:
-        return bool(Game._room_entry_position) and (time.time() - Game._room_entry_time <= Game._entry_door_protect_seconds)
+        return bool(Game._room_entry_position) and (
+            time.time() - Game._room_entry_time <= Game._entry_door_protect_seconds
+        )
 
-    def _should_block_backtrack_direction(self, direction: Optional[str]) -> bool:
+    def _should_block_backtrack_direction(self, direction: str | None) -> bool:
         if not direction or not self._is_entry_protected():
             return False
         entry_side = self._reverse_direction(Game._flow_direction)
@@ -329,12 +330,12 @@ class Game:
     def _attack_ready(self) -> bool:
         return time.time() - Game._last_attack_time >= Game._attack_cooldown_seconds
 
-    def _special_attack_ready(self, now: Optional[float] = None) -> bool:
+    def _special_attack_ready(self, now: float | None = None) -> bool:
         now = time.time() if now is None else now
 
         return now >= Game._next_special_attack_time
 
-    def _try_attack(self, face: Optional[str] = None) -> bool:
+    def _try_attack(self, face: str | None = None) -> bool:
         self._release_cached_action()
         now = time.time()
         special_ready = self._special_attack_ready(now)
@@ -354,11 +355,14 @@ class Game:
         if extra_ready:
             self._key_press(Game._extra_attack_key)
             cooldown = random.uniform(*Game._extra_attack_cooldown_range)
-            Game._next_extra_attack_time =now +cooldown
+            Game._next_extra_attack_time = now + cooldown
             Game._last_attack_time = now
-            logger.info("press extra attack key {}, cooldown {:.2f}s",Game._extra_attack_key,cooldown,)
+            logger.info(
+                "press extra attack key {}, cooldown {:.2f}s",
+                Game._extra_attack_key,
+                cooldown,
+            )
             return True
-
 
         if special_ready:
             self._key_press(Game._special_attack_key)
@@ -376,7 +380,7 @@ class Game:
         Game._last_attack_time = now
         return True
 
-    def _tap_direction(self, direction: str, duration: Optional[float] = None) -> None:
+    def _tap_direction(self, direction: str, duration: float | None = None) -> None:
         duration = Game._tap_direction_seconds if duration is None else duration
         for action in direction.strip().split("_"):
             pydirectinput.keyDown(action.lower())
@@ -385,7 +389,7 @@ class Game:
             pydirectinput.keyUp(action.lower())
         time.sleep(0.04)
 
-    def _reverse_direction(self, direction: Optional[str]) -> Optional[str]:
+    def _reverse_direction(self, direction: str | None) -> str | None:
         mapping = {
             "LEFT": "RIGHT",
             "RIGHT": "LEFT",
@@ -398,7 +402,7 @@ class Game:
         }
         return mapping.get(direction or "")
 
-    def _primary_door_direction(self, direction: Optional[str]) -> Optional[str]:
+    def _primary_door_direction(self, direction: str | None) -> str | None:
         if not direction:
             return None
         direction = direction.upper()
@@ -412,7 +416,7 @@ class Game:
             return "UP"
         return direction
 
-    def _get_nearest(self, cls_objs: Sequence[BoxDict], direct: Optional[str] = None) -> Optional[BoxDict]:
+    def _get_nearest(self, cls_objs: Sequence[BoxDict], direct: str | None = None) -> BoxDict | None:
         nearest = None
         min_distance = float("inf")
 
@@ -439,7 +443,7 @@ class Game:
                 if "down" in name and dy <= 0:
                     continue
 
-            distance = (dx ** 2 + dy ** 2) ** 0.5
+            distance = (dx**2 + dy**2) ** 0.5
             if distance < min_distance:
                 min_distance = distance
                 nearest = {
@@ -449,7 +453,7 @@ class Game:
 
         return nearest
 
-    def _get_route_forward_door(self, doors: Sequence[BoxDict], direction: Optional[str]) -> Optional[BoxDict]:
+    def _get_route_forward_door(self, doors: Sequence[BoxDict], direction: str | None) -> BoxDict | None:
         if not doors or not direction or not self._player_xywh:
             return None
 
@@ -483,10 +487,15 @@ class Game:
             else:
                 return self._get_nearest(doors, direct=direction)
 
-            candidates.append((score, {
-                "xywh": [obj_x, obj_y, xywh[2], xywh[3]],
-                "conf": item.get("conf", 0),
-            }))
+            candidates.append(
+                (
+                    score,
+                    {
+                        "xywh": [obj_x, obj_y, xywh[2], xywh[3]],
+                        "conf": item.get("conf", 0),
+                    },
+                )
+            )
 
         if not candidates:
             return None
@@ -496,9 +505,9 @@ class Game:
     def _get_door_by_center(
         self,
         doors: Sequence[BoxDict],
-        center: Optional[Tuple[float, float]],
+        center: tuple[float, float] | None,
         max_distance: float = 80.0,
-    ) -> Optional[BoxDict]:
+    ) -> BoxDict | None:
         if center is None:
             return None
 
@@ -520,7 +529,7 @@ class Game:
             return nearest
         return None
 
-    def _get_direction(self, obj_box: Sequence[float]) -> Optional[str]:
+    def _get_direction(self, obj_box: Sequence[float]) -> str | None:
         if not self._player_xywh:
             return None
         dx = obj_box[0] - self._player_xywh[0]
@@ -552,9 +561,9 @@ class Game:
         self,
         direction: str,
         is_slow: bool = False,
-        _action_cache: Optional[str] = None,
-        press_time: Optional[float] = None,
-        release_time: Optional[float] = None,
+        _action_cache: str | None = None,
+        press_time: float | None = None,
+        release_time: float | None = None,
     ) -> str:
         press_time = Game._move_press_time if press_time is None else press_time
         release_time = Game._move_release_time if release_time is None else release_time
@@ -674,7 +683,10 @@ class Game:
         if not self._player_xywh:
             return
 
-        if abs(obj_box[0] - self._player_xywh[0]) < self._attack_x and abs(obj_box[1] - self._player_xywh[1]) < self._attack_y:
+        if (
+            abs(obj_box[0] - self._player_xywh[0]) < self._attack_x
+            and abs(obj_box[1] - self._player_xywh[1]) < self._attack_y
+        ):
             direction = self._get_direction(obj_box)
             face = None
             if direction:
@@ -764,8 +776,8 @@ class Game:
 
     def _route_search_progress_reached(
         self,
-        start: Tuple[float, float],
-        current: Tuple[float, float],
+        start: tuple[float, float],
+        current: tuple[float, float],
         command: str,
     ) -> bool:
         start_x, start_y = start
@@ -782,7 +794,7 @@ class Game:
             return True
         return False
 
-    def _route_search_commands(self, direction: str) -> Tuple[str, ...]:
+    def _route_search_commands(self, direction: str) -> tuple[str, ...]:
         mapping = {
             "RIGHT": ("RIGHT",),
             "LEFT": ("LEFT",),
@@ -791,7 +803,9 @@ class Game:
         }
         return mapping.get(direction, (direction,))
 
-    def _get_route_direction_to_target(self, obj_box: Sequence[float], route_direction: Optional[str] = None) -> Optional[str]:
+    def _get_route_direction_to_target(
+        self, obj_box: Sequence[float], route_direction: str | None = None
+    ) -> str | None:
         route_direction = self._current_door_direction() if route_direction is None else route_direction
         route_direction = self._primary_door_direction(route_direction)
         if route_direction not in {"LEFT", "RIGHT"} or not self._player_xywh:
@@ -930,8 +944,7 @@ class Game:
         cached_parts = set(cached_action.split("_")) if cached_action else set()
         stale_cached_action = bool(cached_action and (route_direction is None or route_direction not in cached_parts))
         stale_vertical_escape = bool(
-            Game._vertical_escape_source_direction
-            and Game._vertical_escape_source_direction != route_direction
+            Game._vertical_escape_source_direction and Game._vertical_escape_source_direction != route_direction
         )
 
         if stale_cached_action or stale_vertical_escape:
@@ -976,7 +989,7 @@ class Game:
             return True
         return False
 
-    def _get_right_search_door(self) -> Optional[BoxDict]:
+    def _get_right_search_door(self) -> BoxDict | None:
         doors = self._get_clss("door")
         if not doors:
             return None
@@ -984,7 +997,9 @@ class Game:
         return self._get_route_forward_door(usable_doors, "RIGHT")
 
     def _move_to_right_search_door(self, door: BoxDict) -> None:
-        direction = self._get_route_direction_to_target(door["xywh"], route_direction="RIGHT") or self._get_direction(door["xywh"])
+        direction = self._get_route_direction_to_target(door["xywh"], route_direction="RIGHT") or self._get_direction(
+            door["xywh"]
+        )
         if direction:
             Game._action_cache = self._move(direction, is_slow=True, _action_cache=Game._action_cache)
 
@@ -1061,7 +1076,11 @@ class Game:
                 Game._down_right_search_until = now + Game._down_right_search_seconds
                 Game._down_stuck_anchor = current
                 Game._down_stuck_since = now
-            logger.warning("{} stuck for {:.1f}s, move away from edge before searching door to RIGHT", direction, Game._down_stuck_seconds)
+            logger.warning(
+                "{} stuck for {:.1f}s, move away from edge before searching door to RIGHT",
+                direction,
+                Game._down_stuck_seconds,
+            )
             return True
 
         return False
@@ -1072,7 +1091,7 @@ class Game:
     def _should_search_right_after_up_stuck(self) -> bool:
         return self._should_search_right_after_vertical_stuck("UP")
 
-    def _cached_vertical_stuck_direction(self, force: bool = False) -> Optional[str]:
+    def _cached_vertical_stuck_direction(self, force: bool = False) -> str | None:
         if not self._player_xywh:
             self._reset_up_stuck_search()
             self._reset_down_stuck_search()
@@ -1137,7 +1156,7 @@ class Game:
 
         return None
 
-    def _vertical_edge_escape_direction(self, direction: str) -> Optional[str]:
+    def _vertical_edge_escape_direction(self, direction: str) -> str | None:
         if direction == "UP":
             return "DOWN"
         if direction == "DOWN":
@@ -1276,7 +1295,7 @@ class Game:
             return "LEFT_UP" if player_y < self._height / 2 else "LEFT_DOWN"
         return "RIGHT_UP" if player_y < self._height / 2 else "RIGHT_DOWN"
 
-    def _would_push_outside(self, direction: Optional[str]) -> bool:
+    def _would_push_outside(self, direction: str | None) -> bool:
         if not direction or not self._player_xywh:
             return False
         direction = direction.upper()
@@ -1396,10 +1415,14 @@ class Game:
                 if nearest_door is not None:
                     logger.info("use route-selected door: {}", self._selected_door_center)
                 if nearest_door is None:
-                    nearest_door = self._get_route_forward_door(usable_doors, direction_hint) if direction_hint else None
+                    nearest_door = (
+                        self._get_route_forward_door(usable_doors, direction_hint) if direction_hint else None
+                    )
                 if nearest_door is None and direction_hint:
                     if self._would_push_outside(direction_hint) and usable_doors:
-                        logger.warning("route hint {} points outside screen edge, use nearest visible door", direction_hint)
+                        logger.warning(
+                            "route hint {} points outside screen edge, use nearest visible door", direction_hint
+                        )
                         nearest_door = self._get_nearest(usable_doors)
                     else:
                         logger.debug("doors found but none match route hint {}, keep following hint", direction_hint)

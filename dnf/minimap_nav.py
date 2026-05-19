@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -14,15 +14,13 @@ from dnf.door_strategy import DoorCandidate, choose_best_door
 from dnf.map_specs import MAP_SPECS, MapSpec, Rect
 from dnf.minimap_astar import next_direction
 
-
-Point = Tuple[int, int]
-ScoredMatch = Tuple[float, float, float, str]
-VariantKey = Tuple[str, bool, Tuple[float, ...]]
+Point = tuple[int, int]
+ScoredMatch = tuple[float, float, float, str]
+VariantKey = tuple[str, bool, tuple[float, ...]]
 
 
 QUERY_TEMPLATE_FILES = {
     "query": "map_query.png",
-
 }
 
 MARKER_THRESHOLDS = {
@@ -44,19 +42,19 @@ QUERY_COLOR_FALLBACK_ENABLED = os.getenv("DNF_QUERY_COLOR_FALLBACK", "0") == "1"
 
 @dataclass
 class RouteSnapshot:
-    current_room: Optional[Point]
-    boss_room: Optional[Point]
-    query_room: Optional[Point]
-    elite_room: Optional[Point]
-    down_room: Optional[Point]
-    target_kind: Optional[str]
-    target_room: Optional[Point]
-    next_room_direction: Optional[str]
-    selected_door_center: Optional[Tuple[float, float]]
-    debug_scores: Optional[Dict[str, float]] = None
+    current_room: Point | None
+    boss_room: Point | None
+    query_room: Point | None
+    elite_room: Point | None
+    down_room: Point | None
+    target_kind: str | None
+    target_room: Point | None
+    next_room_direction: str | None
+    selected_door_center: tuple[float, float] | None
+    debug_scores: dict[str, float] | None = None
 
 
-def _parse_rect_env(name: str) -> Optional[Rect]:
+def _parse_rect_env(name: str) -> Rect | None:
     value = os.getenv(name)
     if not value:
         return None
@@ -72,10 +70,10 @@ def _parse_rect_env(name: str) -> Optional[Rect]:
 def _scale_rect(rect: Rect, scale_x: float, scale_y: float) -> Rect:
     x1, y1, x2, y2 = rect
     return (
-        int(round(x1 * scale_x)),
-        int(round(y1 * scale_y)),
-        int(round(x2 * scale_x)),
-        int(round(y2 * scale_y)),
+        round(x1 * scale_x),
+        round(y1 * scale_y),
+        round(x2 * scale_x),
+        round(y2 * scale_y),
     )
 
 
@@ -89,7 +87,7 @@ def _clamp_rect(rect: Rect, width: int, height: int) -> Rect:
 
 
 class MiniMapNavigator:
-    def __init__(self, map_name: str = "auto", assets_dir: Optional[Path] = None, threshold: float = 0.7):
+    def __init__(self, map_name: str = "auto", assets_dir: Path | None = None, threshold: float = 0.7):
         self.auto_map = map_name == "auto"
         if self.auto_map or map_name not in MAP_SPECS:
             map_name = "universal"
@@ -110,14 +108,14 @@ class MiniMapNavigator:
         down_template = self._load_template_optional("map_down.png")
         if down_template is not None:
             self.templates["down"] = down_template
-        self.last_direction: Optional[str] = None
-        self._variant_cache: Dict[VariantKey, List[np.ndarray]] = {}
-        self._debug_scores_cache: Dict[str, float] = {}
+        self.last_direction: str | None = None
+        self._variant_cache: dict[VariantKey, list[np.ndarray]] = {}
+        self._debug_scores_cache: dict[str, float] = {}
         self._debug_scores_frame = 0
         self._debug_scores_interval = 5
-        self._last_room_rect: Optional[Rect] = None
-        self._auto_scores_cache: Dict[str, float] = {}
-        self._auto_candidate_map: Optional[str] = None
+        self._last_room_rect: Rect | None = None
+        self._auto_scores_cache: dict[str, float] = {}
+        self._auto_candidate_map: str | None = None
         self._auto_candidate_count = 0
 
     def _set_active_map(self, map_name: str) -> None:
@@ -155,17 +153,17 @@ class MiniMapNavigator:
             raise FileNotFoundError(f"template not found: {path}")
         return image
 
-    def _load_template_optional(self, filename: str) -> Optional[np.ndarray]:
+    def _load_template_optional(self, filename: str) -> np.ndarray | None:
         path = self.assets_dir / filename
         if not path.exists():
             return None
         image = cv2.imread(str(path), cv2.IMREAD_COLOR)
         return image
 
-    def _load_layout_templates(self) -> Dict[str, np.ndarray]:
+    def _load_layout_templates(self) -> dict[str, np.ndarray]:
         return {}
 
-    def _scaled_rects_for_spec(self, frame: np.ndarray, spec: MapSpec) -> Tuple[Rect, Optional[Rect]]:
+    def _scaled_rects_for_spec(self, frame: np.ndarray, spec: MapSpec) -> tuple[Rect, Rect | None]:
         frame_h, frame_w = frame.shape[:2]
         if spec.crop_rect_800 is not None and frame_w <= 900:
             scale_x = frame_w / 800.0
@@ -191,13 +189,13 @@ class MiniMapNavigator:
         _, max_val, _, _ = cv2.minMaxLoc(result)
         return float(max_val)
 
-    def _score_layout_templates(self, frame: np.ndarray) -> Dict[str, float]:
+    def _score_layout_templates(self, frame: np.ndarray) -> dict[str, float]:
         if not self.layout_templates:
             return {}
 
-        frame_h, frame_w = frame.shape[:2]
-        search_region = frame[:, max(0, int(frame_w * 0.45)):frame_w]
-        scores: Dict[str, float] = {}
+        _frame_h, frame_w = frame.shape[:2]
+        search_region = frame[:, max(0, int(frame_w * 0.45)) : frame_w]
+        scores: dict[str, float] = {}
         for map_name, template in self.layout_templates.items():
             if template.shape[0] > search_region.shape[0] or template.shape[1] > search_region.shape[1]:
                 scores[map_name] = 0.0
@@ -243,7 +241,12 @@ class MiniMapNavigator:
                     self._auto_candidate_count = 1
 
                 if self._auto_candidate_count >= AUTO_MAP_CONFIRM_FRAMES:
-                    logger.info("auto minimap layout switched: {} -> {}, scores={}", self.map_name, best_layout_map, layout_scores)
+                    logger.info(
+                        "auto minimap layout switched: {} -> {}, scores={}",
+                        self.map_name,
+                        best_layout_map,
+                        layout_scores,
+                    )
                     self._set_active_map(best_layout_map)
                     self._auto_candidate_map = None
                     self._auto_candidate_count = 0
@@ -277,7 +280,7 @@ class MiniMapNavigator:
             self._auto_candidate_map = None
             self._auto_candidate_count = 0
 
-    def _scaled_crop_and_room_rect(self, frame: np.ndarray) -> Tuple[Rect, Optional[Rect]]:
+    def _scaled_crop_and_room_rect(self, frame: np.ndarray) -> tuple[Rect, Rect | None]:
         frame_h, frame_w = frame.shape[:2]
         if self.crop_rect_800 is not None and frame_w <= 900:
             x1, y1, x2, y2 = self.crop_rect_800
@@ -306,12 +309,16 @@ class MiniMapNavigator:
         minimap = frame[y1:y2, x1:x2]
         if room_rect is not None:
             rx1, ry1, rx2, ry2 = room_rect
-            self._last_room_rect = _clamp_rect((rx1 - x1, ry1 - y1, rx2 - x1, ry2 - y1), minimap.shape[1], minimap.shape[0])
+            self._last_room_rect = _clamp_rect(
+                (rx1 - x1, ry1 - y1, rx2 - x1, ry2 - y1), minimap.shape[1], minimap.shape[0]
+            )
         else:
             self._last_room_rect = (0, 0, minimap.shape[1], minimap.shape[0])
         return minimap
 
-    def _match_template(self, image: np.ndarray, template: np.ndarray, threshold: Optional[float] = None) -> List[Tuple[float, float]]:
+    def _match_template(
+        self, image: np.ndarray, template: np.ndarray, threshold: float | None = None
+    ) -> list[tuple[float, float]]:
         threshold = self.threshold if threshold is None else threshold
         return [(x, y) for _, x, y, _ in self._match_template_scored(image, template, threshold=threshold)]
 
@@ -319,11 +326,11 @@ class MiniMapNavigator:
         self,
         image: np.ndarray,
         template: np.ndarray,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
         scales: Sequence[float] = (1.0,),
         name: str = "",
         use_color: bool = False,
-    ) -> List[ScoredMatch]:
+    ) -> list[ScoredMatch]:
         threshold = self.threshold if threshold is None else threshold
         if use_color:
             match_image = image
@@ -331,7 +338,7 @@ class MiniMapNavigator:
         else:
             match_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             match_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-        scored_matches: List[ScoredMatch] = []
+        scored_matches: list[ScoredMatch] = []
         scaled_templates = self._get_scaled_templates(name, match_template, scales, use_color)
         for scaled_template in scaled_templates:
             h, w = scaled_template.shape[:2]
@@ -350,11 +357,13 @@ class MiniMapNavigator:
         template: np.ndarray,
         scales: Sequence[float],
         use_color: bool,
-    ) -> List[np.ndarray]:
+    ) -> list[np.ndarray]:
         scale_key = tuple(scales)
         if not name:
             return [
-                template if scale == 1.0 else cv2.resize(template, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+                template
+                if scale == 1.0
+                else cv2.resize(template, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
                 for scale in scale_key
             ]
 
@@ -370,24 +379,24 @@ class MiniMapNavigator:
         self._variant_cache[key] = variants
         return variants
 
-    def _match_template_debug(self, image: np.ndarray, template: np.ndarray) -> Tuple[List[Tuple[float, float]], float]:
+    def _match_template_debug(self, image: np.ndarray, template: np.ndarray) -> tuple[list[tuple[float, float]], float]:
         image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         result = cv2.matchTemplate(image_gray, template_gray, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, _ = cv2.minMaxLoc(result)
         ys, xs = np.where(result >= self.threshold)
-        scored_matches: List[Tuple[float, float, float]] = []
+        scored_matches: list[tuple[float, float, float]] = []
         h, w = template_gray.shape[:2]
         for y, x in zip(ys, xs):
             scored_matches.append((float(result[y, x]), x + w / 2.0, y + h / 2.0))
         scored_matches.sort(key=lambda item: item[0], reverse=True)
         return [(x, y) for _, x, y in scored_matches], float(max_val)
 
-    def _match_marker(self, minimap: np.ndarray, names: Sequence[str], threshold_key: str) -> List[ScoredMatch]:
+    def _match_marker(self, minimap: np.ndarray, names: Sequence[str], threshold_key: str) -> list[ScoredMatch]:
         threshold = MARKER_THRESHOLDS.get(threshold_key, self.threshold)
         scales = ROBUST_TEMPLATE_SCALES if threshold_key in {"hero", "query"} else (1.0,)
         use_color = threshold_key == "query"
-        matches: List[ScoredMatch] = []
+        matches: list[ScoredMatch] = []
         for name in names:
             template = self.templates.get(name)
             if template is None:
@@ -409,8 +418,8 @@ class MiniMapNavigator:
         self,
         matches: Sequence[ScoredMatch],
         minimap: np.ndarray,
-        excluded_rooms: Sequence[Optional[Point]] = (),
-    ) -> Optional[Point]:
+        excluded_rooms: Sequence[Point | None] = (),
+    ) -> Point | None:
         room, _ = self._first_room_and_center_from_matches(matches, minimap, excluded_rooms)
         return room
 
@@ -418,8 +427,8 @@ class MiniMapNavigator:
         self,
         matches: Sequence[ScoredMatch],
         minimap: np.ndarray,
-        excluded_rooms: Sequence[Optional[Point]] = (),
-    ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+        excluded_rooms: Sequence[Point | None] = (),
+    ) -> tuple[Point | None, tuple[float, float] | None]:
         excluded = {room for room in excluded_rooms if room is not None}
         for _, x, y, _ in matches:
             room = self.compute_room_id(x, y, minimap)
@@ -431,9 +440,9 @@ class MiniMapNavigator:
         self,
         matches: Sequence[ScoredMatch],
         minimap: np.ndarray,
-        excluded_markers: Sequence[Optional[Tuple[float, float]]] = (),
+        excluded_markers: Sequence[tuple[float, float] | None] = (),
         min_distance: float = 8.0,
-    ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+    ) -> tuple[Point | None, tuple[float, float] | None]:
         excluded = [marker for marker in excluded_markers if marker is not None]
         min_distance_sq = min_distance * min_distance
         for _, x, y, _ in matches:
@@ -442,16 +451,16 @@ class MiniMapNavigator:
             return self.compute_room_id(x, y, minimap), (x, y)
         return None, None
 
-    def _match_query_by_color(self, minimap: np.ndarray, current_room: Optional[Point]) -> List[ScoredMatch]:
+    def _match_query_by_color(self, minimap: np.ndarray, current_room: Point | None) -> list[ScoredMatch]:
         if current_room is None:
             return []
 
         hsv = cv2.cvtColor(minimap, cv2.COLOR_BGR2HSV)
         yellow_mask = cv2.inRange(hsv, np.array([18, 70, 70]), np.array([45, 255, 255]))
         yellow_mask = cv2.morphologyEx(yellow_mask, cv2.MORPH_OPEN, np.ones((2, 2), dtype=np.uint8))
-        count, labels, stats, centroids = cv2.connectedComponentsWithStats(yellow_mask, connectivity=8)
+        count, _labels, stats, centroids = cv2.connectedComponentsWithStats(yellow_mask, connectivity=8)
 
-        matches: List[ScoredMatch] = []
+        matches: list[ScoredMatch] = []
         for index in range(1, count):
             area = int(stats[index, cv2.CC_STAT_AREA])
             width = int(stats[index, cv2.CC_STAT_WIDTH])
@@ -493,10 +502,10 @@ class MiniMapNavigator:
 
         cv2.rectangle(minimap, (rx1, ry1), (rx2 - 1, ry2 - 1), (255, 255, 255), 1)
         for col in range(1, self.spec.cols):
-            x = int(round(rx1 + (rx2 - rx1) * col / self.spec.cols))
+            x = round(rx1 + (rx2 - rx1) * col / self.spec.cols)
             cv2.line(minimap, (x, ry1), (x, ry2 - 1), (180, 180, 180), 1)
         for row in range(1, self.spec.rows):
-            y = int(round(ry1 + (ry2 - ry1) * row / self.spec.rows))
+            y = round(ry1 + (ry2 - ry1) * row / self.spec.rows)
             cv2.line(minimap, (rx1, y), (rx2 - 1, y), (180, 180, 180), 1)
 
         marker_styles = {
@@ -510,12 +519,12 @@ class MiniMapNavigator:
             marker = info.get(key)
             if marker is None:
                 continue
-            x, y = int(round(marker[0])), int(round(marker[1]))
+            x, y = round(marker[0]), round(marker[1])
             cv2.circle(minimap, (x, y), 4, color, -1)
             cv2.putText(minimap, label, (x + 5, y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
         return minimap
 
-    def detect_room_markers(self, frame: np.ndarray) -> Dict[str, Optional[Point]]:
+    def detect_room_markers(self, frame: np.ndarray) -> dict[str, Point | None]:
         minimap = self.extract_minimap(frame)
         current_room = None
         boss_room = None
@@ -539,7 +548,9 @@ class MiniMapNavigator:
             elite_marker = elite_matches[0]
             elite_room = self.compute_room_id(*elite_marker, minimap)
 
-        special_matches = self._match_template(minimap, self.templates["special"], threshold=MARKER_THRESHOLDS["special"])
+        special_matches = self._match_template(
+            minimap, self.templates["special"], threshold=MARKER_THRESHOLDS["special"]
+        )
         if special_matches and elite_room is None:
             elite_marker = special_matches[0]
             elite_room = self.compute_room_id(*elite_marker, minimap)
@@ -600,21 +611,21 @@ class MiniMapNavigator:
             "down_marker": down_marker,
         }
 
-    def get_debug_scores(self, frame: np.ndarray) -> Dict[str, float]:
+    def get_debug_scores(self, frame: np.ndarray) -> dict[str, float]:
         self._debug_scores_frame += 1
         if self._debug_scores_cache and self._debug_scores_frame % self._debug_scores_interval != 0:
             return self._debug_scores_cache
 
         minimap = self.extract_minimap(frame)
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
         for name, template in self.templates.items():
             _, max_val = self._match_template_debug(minimap, template)
             scores[name] = round(max_val, 4)
         self._debug_scores_cache = scores
         return scores
 
-    def _door_candidates_from_objects(self, objects: Sequence[dict]) -> List[DoorCandidate]:
-        doors: List[DoorCandidate] = []
+    def _door_candidates_from_objects(self, objects: Sequence[dict]) -> list[DoorCandidate]:
+        doors: list[DoorCandidate] = []
         for item in objects:
             if "door" not in item:
                 continue
@@ -630,25 +641,25 @@ class MiniMapNavigator:
 
     def _pick_target_room(
         self,
-        current_room: Optional[Point],
-        query_room: Optional[Point],
-        down_room: Optional[Point],
-        elite_room: Optional[Point],
-        boss_room: Optional[Point],
+        current_room: Point | None,
+        query_room: Point | None,
+        down_room: Point | None,
+        elite_room: Point | None,
+        boss_room: Point | None,
         prefer_special_room: bool,
-    ) -> Optional[Point]:
+    ) -> Point | None:
         return self._pick_target(current_room, query_room, down_room, elite_room, boss_room, prefer_special_room)[1]
 
     def _pick_target(
         self,
-        current_room: Optional[Point],
-        query_room: Optional[Point],
-        down_room: Optional[Point],
-        elite_room: Optional[Point],
-        boss_room: Optional[Point],
+        current_room: Point | None,
+        query_room: Point | None,
+        down_room: Point | None,
+        elite_room: Point | None,
+        boss_room: Point | None,
         prefer_special_room: bool,
-    ) -> Tuple[Optional[str], Optional[Point]]:
-        candidates: List[Tuple[str, Optional[Point]]] = []
+    ) -> tuple[str | None, Point | None]:
+        candidates: list[tuple[str, Point | None]] = []
         if prefer_special_room:
             candidates.append(("query", query_room))
             candidates.append(("boss", boss_room))
@@ -672,7 +683,7 @@ class MiniMapNavigator:
             return "down" if row_delta > 0 else "up"
         return "right"
 
-    def _marker_direction(self, current_marker: Tuple[float, float], target_marker: Tuple[float, float]) -> Optional[str]:
+    def _marker_direction(self, current_marker: tuple[float, float], target_marker: tuple[float, float]) -> str | None:
         dx = target_marker[0] - current_marker[0]
         dy = target_marker[1] - current_marker[1]
         margin = 6.0
@@ -692,9 +703,9 @@ class MiniMapNavigator:
 
     def _target_marker_for_kind(
         self,
-        target_kind: Optional[str],
-        room_info: Dict[str, object],
-    ) -> Optional[Tuple[float, float]]:
+        target_kind: str | None,
+        room_info: dict[str, object],
+    ) -> tuple[float, float] | None:
         marker_by_kind = {
             "query": room_info.get("query_marker"),
             "boss": room_info.get("boss_marker"),
@@ -756,7 +767,9 @@ class MiniMapNavigator:
             target_room = None
         elif current_room is not None and target_room is not None:
             route_priority = self._route_priority(current_room, target_room)
-            next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+            next_room_direction = next_direction(
+                deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority
+            )
 
         selected_door_center = None
         player_center = None
@@ -767,7 +780,7 @@ class MiniMapNavigator:
                 break
         door_candidates = self._door_candidates_from_objects(detection_objects)
 
-        def select_door(direction: Optional[str]) -> Optional[DoorCandidate]:
+        def select_door(direction: str | None) -> DoorCandidate | None:
             if direction is None or player_center is None:
                 return None
             return choose_best_door(
