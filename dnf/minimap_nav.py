@@ -771,14 +771,14 @@ class MiniMapNavigator:
 
         next_room_direction = None
         target_marker = self._target_marker_for_kind(target_kind, room_info)
-        if current_marker is not None and target_marker is not None:
+        if current_room is not None and target_room is not None and target_room != current_room:
+            route_priority = self._route_priority(current_room, target_room)
+            next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+        elif current_marker is not None and target_marker is not None:
             next_room_direction = self._marker_step_direction(current_marker, target_marker)
         elif current_room is not None and query_room is None and target_room is None:
             target_kind = "query_missing"
             target_room = None
-        elif current_room is not None and target_room is not None:
-            route_priority = self._route_priority(current_room, target_room)
-            next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
 
         selected_door_center = None
         player_center = None
