@@ -1,15 +1,14 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 @File    : main.py
-@Desc    : Win32-based DNF capture loop
+@Desc    : Win32-based DNF capture loop.
 """
+
 from __future__ import annotations
 
 import os
 import pathlib
 import time
-from typing import Optional, Tuple
 
 import cv2
 import mss
@@ -33,7 +32,6 @@ temp = pathlib.PosixPath
 pathlib.PosixPath = pathlib.WindowsPath
 
 from dnf.detector import Detector
-
 
 WINDOW_OFFSET_X = 10
 WINDOW_OFFSET_Y = 10
@@ -100,7 +98,7 @@ def _place_window(hwnd: int) -> None:
     )
 
 
-def _get_client_region(hwnd: int) -> Tuple[int, int, int, int]:
+def _get_client_region(hwnd: int) -> tuple[int, int, int, int]:
     left_top = win32gui.ClientToScreen(hwnd, (0, 0))
     client_rect = win32gui.GetClientRect(hwnd)
     left = int(left_top[0])
@@ -114,13 +112,11 @@ def _get_client_region(hwnd: int) -> Tuple[int, int, int, int]:
 
 def _capture_client(
     hwnd: int,
-    screen_grabber: Optional[mss.mss] = None,
-) -> Tuple[np.ndarray, Tuple[int, int], Tuple[int, int]]:
+    screen_grabber: mss.mss | None = None,
+) -> tuple[np.ndarray, tuple[int, int], tuple[int, int]]:
     left, top, width, height = _get_client_region(hwnd)
     if screen_grabber is not None:
-        frame_bgra = np.asarray(
-            screen_grabber.grab({"left": left, "top": top, "width": width, "height": height})
-        )
+        frame_bgra = np.asarray(screen_grabber.grab({"left": left, "top": top, "width": width, "height": height}))
         img_np = cv2.cvtColor(frame_bgra, cv2.COLOR_BGRA2RGB)
         return img_np, (width, height), (left, top)
 
@@ -129,13 +125,13 @@ def _capture_client(
     return img_np, (width, height), (left, top)
 
 
-def _timed_key_names(timed_key_scheduler: object) -> Tuple[str, ...]:
+def _timed_key_names(timed_key_scheduler: object) -> tuple[str, ...]:
     rules = getattr(timed_key_scheduler, "rules", ())
     return tuple(str(getattr(rule, "key", "")).strip() for rule in rules if getattr(rule, "key", ""))
 
 
 def _pause_actions_for_ui_prompt(timed_key_scheduler: object | None) -> None:
-    timed_keys: Tuple[str, ...] = ()
+    timed_keys: tuple[str, ...] = ()
     if timed_key_scheduler is not None:
         timed_keys = _timed_key_names(timed_key_scheduler)
         pause = getattr(timed_key_scheduler, "pause", None)
@@ -216,11 +212,7 @@ def main() -> None:
                 obj or [],
                 include_debug_scores=ROUTE_DEBUG or DEBUG_MINIMAP,
             )
-            route_direction = (
-                route_snapshot.next_room_direction.upper()
-                if route_snapshot.next_room_direction
-                else None
-            )
+            route_direction = route_snapshot.next_room_direction.upper() if route_snapshot.next_room_direction else None
             logger.debug(
                 "route: map={}, current={}, boss={}, query={}, elite={}, down={}, target={}@{}, direction={}, door={}, scores={}",
                 navigator.map_name,
