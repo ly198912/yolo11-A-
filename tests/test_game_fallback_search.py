@@ -771,6 +771,20 @@ def test_pickup_presses_key_only_when_x_and_y_are_tightly_aligned() -> None:
     assert keys == ["x"]
 
 
+def test_pickup_presses_key_when_money_is_underfoot_without_vertical_jitter() -> None:
+    _reset_search_state()
+    game, moves = _game_with_recorder()
+    game._player_xywh = [453.90625, 425.09765625, 0.0, 0.0]
+    keys: list[str] = []
+    game._release_cached_action = lambda: None  # type: ignore[method-assign]
+    game._key_press = lambda key: keys.append(key)  # type: ignore[method-assign]
+
+    game._pick_up([461.328125, 402.734375, 55.46875, 21.875])
+
+    assert moves == []
+    assert keys == ["x"]
+
+
 def test_pickup_uses_x_axis_only_when_item_is_far_outside_y_sweep_range() -> None:
     _reset_search_state()
     game, moves = _game_with_recorder()

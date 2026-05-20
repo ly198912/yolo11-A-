@@ -117,6 +117,7 @@ class Game:
     _pickup_x_deadzone = _env_float("DNF_PICKUP_X_DEADZONE", 18.0)
     _pickup_y_sweep_x_range = _env_float("DNF_PICKUP_Y_SWEEP_X_RANGE", 120.0)
     _pickup_y_deadzone = _env_float("DNF_PICKUP_Y_DEADZONE", 14.0)
+    _pickup_key_y_deadzone = _env_float("DNF_PICKUP_KEY_Y_DEADZONE", 36.0)
     _route_pickup_cross_axis_limit = _env_float("DNF_ROUTE_PICKUP_CROSS_AXIS_LIMIT", 36.0)
     _route_pickup_close_limit = _env_float("DNF_ROUTE_PICKUP_CLOSE_LIMIT", 42.0)
     _special_attack_key = _env_key("DNF_SPECIAL_ATTACK_KEY", "q")
@@ -709,8 +710,9 @@ class Game:
         x_deadzone = max(12.0, Game._pickup_x_deadzone)
         y_sweep_x_range = max(x_deadzone, Game._pickup_y_sweep_x_range)
         y_deadzone = max(8.0, Game._pickup_y_deadzone)
+        key_y_deadzone = max(y_deadzone, Game._pickup_key_y_deadzone)
 
-        if abs_dx <= x_deadzone and abs_dy <= y_deadzone:
+        if abs_dx <= x_deadzone and abs_dy <= key_y_deadzone:
             self._release_cached_action()
             self._key_press("x")
             return
