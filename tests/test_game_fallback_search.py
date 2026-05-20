@@ -605,6 +605,48 @@ def test_diagonal_route_hint_uses_right_door_instead_of_fallbacking_up() -> None
     assert moves == ["RIGHT"]
 
 
+def test_diagonal_fallback_keeps_full_route_direction_when_no_matching_door() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"door": {"xywh": [201.0, 324.0, 80.0, 105.0], "conf": 0.9}},
+            {"player": {"xywh": [776.0, 283.0, 24.0, 133.0], "conf": 0.9}},
+        ],
+        width=800,
+        height=600,
+        direction="RIGHT_UP",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+
+    game.run()
+
+    assert moves == ["RIGHT_UP"]
+
+
+def test_same_diagonal_route_releases_stale_cardinal_cache() -> None:
+    _reset_search_state()
+    game = Game([], width=800, height=600, direction="RIGHT_UP")
+    Game._active_route_direction = "RIGHT_UP"
+    Game._action_cache = "RIGHT"
+    released: list[bool] = []
+
+    def record_release() -> None:
+        released.append(True)
+        Game._action_cache = None
+
+    game._release_cached_action = record_release  # type: ignore[method-assign]
+
+    game._sync_route_direction_state()
+
+    assert released == [True]
+
+
 def test_pickup_prioritizes_y_axis_inside_x_deadzone() -> None:
     _reset_search_state()
     game, moves = _game_with_recorder()

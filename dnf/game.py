@@ -923,9 +923,6 @@ class Game:
 
     def _sync_route_direction_state(self) -> None:
         route_direction = self._current_door_direction()
-        if route_direction == Game._active_route_direction:
-            return
-
         previous_direction = Game._active_route_direction
         Game._active_route_direction = route_direction
         cached_action = (Game._action_cache or "").upper()
@@ -1233,7 +1230,7 @@ class Game:
         Game._action_cache = self._move(command, is_slow=True, _action_cache=Game._action_cache)
 
     def _fallback_route_move(self, direction: str) -> None:
-        normalized = self._primary_door_direction(direction) or direction.upper()
+        normalized = direction.upper()
         if self._continue_right_search_lock():
             return
         if normalized == "DOWN":
