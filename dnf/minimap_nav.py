@@ -723,6 +723,36 @@ class MiniMapNavigator:
         x, y = marker  # type: ignore[misc]
         return float(x), float(y)
 
+    def _should_marker_override_grid_direction(
+        self,
+        grid_direction: Optional[str],
+        marker_direction: Optional[str],
+        door_candidates: Sequence[DoorCandidate],
+        player_center: Optional[Tuple[float, float]],
+    ) -> bool:
+        if not grid_direction or not marker_direction or not player_center:
+            return False
+        if grid_direction == marker_direction:
+            return False
+
+        opposite_horizontal = {grid_direction, marker_direction} == {"left", "right"}
+        if not opposite_horizontal:
+            return False
+
+        marker_door = choose_best_door(
+            door_candidates,
+            player_center=player_center,
+            expected_direction=marker_direction,
+            last_direction=getattr(self, "last_direction", None),
+        )
+        grid_door = choose_best_door(
+            door_candidates,
+            player_center=player_center,
+            expected_direction=grid_direction,
+            last_direction=getattr(self, "last_direction", None),
+        )
+        return marker_door is not None and grid_door is not None
+
     def build_route_snapshot(
         self,
         frame_bgr: np.ndarray,
@@ -769,18 +799,6 @@ class MiniMapNavigator:
                 target_room = room
                 break
 
-        next_room_direction = None
-        target_marker = self._target_marker_for_kind(target_kind, room_info)
-        if current_room is not None and target_room is not None and target_room != current_room:
-            route_priority = self._route_priority(current_room, target_room)
-            next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
-        elif current_marker is not None and target_marker is not None:
-            next_room_direction = self._marker_step_direction(current_marker, target_marker)
-        elif current_room is not None and query_room is None and target_room is None:
-            target_kind = "query_missing"
-            target_room = None
-
-        selected_door_center = None
         player_center = None
         for item in detection_objects:
             if "player" in item:
@@ -788,6 +806,33 @@ class MiniMapNavigator:
                 player_center = (x + w / 2.0, y + h / 2.0)
                 break
         door_candidates = self._door_candidates_from_objects(detection_objects)
+
+        next_room_direction = None
+        target_marker = self._target_marker_for_kind(target_kind, room_info)
+        if current_room is not None and target_room is not None and target_room != current_room:
+            route_priority = self._route_priority(current_room, target_room)
+            grid_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+            marker_direction = (
+                self._marker_step_direction(current_marker, target_marker)
+                if current_marker is not None and target_marker is not None
+                else None
+            )
+            if self._should_marker_override_grid_direction(
+                grid_direction,
+                marker_direction,
+                door_candidates,
+                player_center,
+            ):
+                next_room_direction = marker_direction
+            else:
+                next_room_direction = grid_direction
+        elif current_marker is not None and target_marker is not None:
+            next_room_direction = self._marker_step_direction(current_marker, target_marker)
+        elif current_room is not None and query_room is None and target_room is None:
+            target_kind = "query_missing"
+            target_room = None
+
+        selected_door_center = None
 
         def select_door(direction: Optional[str]) -> Optional[DoorCandidate]:
             if direction is None or player_center is None:

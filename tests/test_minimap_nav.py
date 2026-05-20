@@ -266,5 +266,38 @@ def test_grid_step_overrides_noisy_marker_when_target_room_is_different() -> Non
     assert snapshot.next_room_direction == "left"
 
 
+def test_visible_right_door_and_marker_override_wrong_left_grid_step() -> None:
+    navigator = MiniMapNavigator.__new__(MiniMapNavigator)
+    navigator.spec = MAP_SPECS["universal"]
+    navigator.last_direction = None
+    navigator.get_debug_scores = lambda frame: {}  # type: ignore[method-assign]
+    navigator.detect_room_markers = lambda frame: {  # type: ignore[method-assign]
+        "current_room": (4, 3),
+        "boss_room": (3, 4),
+        "query_room": (3, 2),
+        "elite_room": (3, 4),
+        "down_room": (4, 2),
+        "current_marker": (90.0, 80.0),
+        "boss_marker": (140.0, 55.0),
+        "query_marker": (150.0, 72.0),
+        "elite_marker": (140.0, 55.0),
+        "down_marker": (88.0, 85.0),
+    }
+
+    snapshot = navigator.build_route_snapshot(
+        np.zeros((600, 800, 3), dtype=np.uint8),
+        [
+            {"player": {"xywh": [75.1953125, 294.921875, 69.3359375, 128.125], "conf": 0.9}},
+            {"door": {"xywh": [518.359375, 291.796875, 82.8125, 93.75], "conf": 0.89}},
+            {"door": {"xywh": [18.26171875, 401.953125, 84.08203125, 80.46875], "conf": 0.6}},
+        ],
+    )
+
+    assert snapshot.target_kind == "query"
+    assert snapshot.target_room == (3, 2)
+    assert snapshot.next_room_direction == "right"
+    assert snapshot.selected_door_center == (559.765625, 338.671875)
+
+
 def test_only_universal_map_spec_is_available() -> None:
     assert list(MAP_SPECS) == ["universal"]
