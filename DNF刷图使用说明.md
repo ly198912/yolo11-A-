@@ -19,6 +19,8 @@
 - `dnf/minimap_grid_preview.py`：小地图裁剪和网格调试预览工具。
 - `dnf/timed_keys.py`：定时按键调度。
 - `dnf/res/`：小地图模板、UI 模板和启动器图标。
+- `dnf/res/jn.png`：技能已过限制时间、图标亮起、可以释放的模板。
+- `dnf/res/jn1.png`：技能未过限制时间、图标冷却/不可释放的模板。
 - `dnf/*.pt`：刷图检测模型。
 
 ## 环境准备
@@ -101,6 +103,9 @@ python -m dnf.launcher
 - `DNF_SPECIAL_ATTACK_KEY`：技能键，默认 `q`。
 - `DNF_EXTRA_ATTACK_KEY`：额外技能键，默认 `a`。
 - `DNF_MOVE_REASSERT_SECONDS`：移动按键保活间隔，默认 `0.12`。
+- `DNF_SKILL_ICON_ENABLED`：技能图标识别，默认 `1` 开启。
+- `DNF_SKILL_ICON_THRESHOLD`：`jn.png` 匹配阈值，默认 `0.86`。
+- `DNF_SKILL_ICON_MARGIN`：`jn.png` 必须比 `jn1.png` 高出的分数，默认 `0.03`。
 - `DNF_DEBUG_MINIMAP`：小地图调试窗口，`1` 开启。
 - `DNF_SHOW_DETECTION_WINDOW`：检测调试窗口，`1` 开启。
 

@@ -155,7 +155,7 @@ class TimedKeyScheduler:
 
 
 def build_timed_key_scheduler_from_env() -> Optional[TimedKeyScheduler]:
-    if os.getenv("DNF_TIMED_KEYS_ENABLED", "1") != "1":
+    if os.getenv("DNF_TIMED_KEYS_ENABLED", "0") != "1":
         return None
 
     spec = os.getenv("DNF_TIMED_KEYS", DEFAULT_TIMED_KEY_SPEC)

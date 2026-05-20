@@ -104,7 +104,7 @@ class DnfBrushLauncher(tk.Tk):
         self.attack_range_x_var = tk.StringVar(value=os.getenv("DNF_MONSTER_ATTACK_RANGE_X", "70"))
         self.attack_range_y_var = tk.StringVar(value=os.getenv("DNF_MONSTER_ATTACK_RANGE_Y", "55"))
 
-        self.timed_keys_enabled_var = tk.BooleanVar(value=os.getenv("DNF_TIMED_KEYS_ENABLED", "1") == "1")
+        self.timed_keys_enabled_var = tk.BooleanVar(value=os.getenv("DNF_TIMED_KEYS_ENABLED", "0") == "1")
         self.timed_key_rows: list[tuple[tk.StringVar, tk.StringVar, tk.StringVar, tk.StringVar, tk.StringVar]] = []
 
         self.vertical_stuck_seconds_var = tk.StringVar(value=os.getenv("DNF_VERTICAL_STUCK_SECONDS", "0.6"))

@@ -86,6 +86,26 @@ def test_monster_attack_uses_q_with_random_cooldown(monkeypatch) -> None:
     assert Game._next_special_attack_time == 108.5
 
 
+def test_monster_attack_skips_q_when_skill_icon_not_ready(monkeypatch) -> None:
+    Game._last_attack_time = 0.0
+    Game._next_special_attack_time = 0.0
+    Game._next_extra_attack_time = 999.0
+    Game._attack_cooldown_seconds = 0.45
+    current_time = 100.0
+    monkeypatch.setattr("dnf.game.time.time", lambda: current_time)
+
+    game = Game([], width=800, height=600, direction="RIGHT", special_skill_ready=False)
+    game._player_xywh = [430.0, 300.0, 0.0, 0.0]
+    pressed: list[str] = []
+
+    game._key_press = pressed.append  # type: ignore[method-assign]
+    game._release_cached_action = lambda: None  # type: ignore[method-assign]
+
+    game._kill_monster([400.0, 300.0, 0.0, 0.0])
+
+    assert pressed == ["left", "x"]
+
+
 def test_monster_moves_closer_before_pressing_attack() -> None:
     Game._next_special_attack_time = 999.0
     Game._next_extra_attack_time = 999.0

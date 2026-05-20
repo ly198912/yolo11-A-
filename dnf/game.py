@@ -132,6 +132,7 @@ class Game:
         direction,
         selected_door_center: Optional[Tuple[float, float]] = None,
         target_kind: Optional[str] = None,
+        special_skill_ready: Optional[bool] = None,
     ):
         self._obj = obj or []
         self._width = width
@@ -144,6 +145,7 @@ class Game:
         self._direction = direction
         self._selected_door_center = selected_door_center
         self._target_kind = target_kind
+        self._special_skill_ready = special_skill_ready
 
     def _current_door_direction(self) -> Optional[str]:
         if isinstance(self._direction, (list, tuple)):
@@ -337,7 +339,7 @@ class Game:
     def _try_attack(self, face: Optional[str] = None) -> bool:
         self._release_cached_action()
         now = time.time()
-        special_ready = self._special_attack_ready(now)
+        special_ready = self._special_attack_ready(now) and self._special_skill_ready is not False
         attack_ready = now - Game._last_attack_time >= Game._attack_cooldown_seconds
         extra_ready = now >= Game._next_extra_attack_time
         if not extra_ready and not special_ready and not attack_ready:

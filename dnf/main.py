@@ -21,6 +21,7 @@ from loguru import logger
 
 from dnf.game import Game
 from dnf.minimap_nav import MiniMapNavigator
+from dnf.skill_detector import SkillReadinessDetector
 from dnf.timed_keys import build_timed_key_scheduler_from_env
 from dnf.ui_detector import (
     handle_retry_challenge_prompt,
@@ -167,6 +168,7 @@ def main() -> None:
     device_type = ""
     detector = Detector(device_type, draw_detections=SHOW_DETECTION_WINDOW)
     navigator = MiniMapNavigator(os.getenv("DNF_MAP_NAME", "universal"))
+    skill_detector = SkillReadinessDetector()
 
     hwnd = _find_dnf_window()
     _place_window(hwnd)
@@ -211,6 +213,7 @@ def main() -> None:
             logger.debug("obj: {}", obj)
 
             frame_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+            special_skill_ready, skill_scores = skill_detector.detect(frame_bgr)
             route_snapshot = navigator.build_route_snapshot(
                 frame_bgr,
                 obj or [],
@@ -235,6 +238,7 @@ def main() -> None:
                 route_snapshot.selected_door_center,
                 route_snapshot.debug_scores,
             )
+            logger.debug("skill: ready={}, scores={}", special_skill_ready, skill_scores)
 
             game = Game(
                 obj,
@@ -243,6 +247,7 @@ def main() -> None:
                 route_direction,
                 route_snapshot.selected_door_center,
                 route_snapshot.target_kind,
+                special_skill_ready,
             )
             game.run()
 
