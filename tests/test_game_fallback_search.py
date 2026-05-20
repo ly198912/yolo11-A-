@@ -629,11 +629,29 @@ def test_diagonal_fallback_keeps_full_route_direction_when_no_matching_door() ->
     assert moves == ["RIGHT_UP"]
 
 
-def test_same_diagonal_route_releases_stale_cardinal_cache() -> None:
+def test_same_diagonal_route_keeps_compatible_cardinal_cache() -> None:
     _reset_search_state()
     game = Game([], width=800, height=600, direction="RIGHT_UP")
     Game._active_route_direction = "RIGHT_UP"
     Game._action_cache = "RIGHT"
+    released: list[bool] = []
+
+    def record_release() -> None:
+        released.append(True)
+        Game._action_cache = None
+
+    game._release_cached_action = record_release  # type: ignore[method-assign]
+
+    game._sync_route_direction_state()
+
+    assert released == []
+
+
+def test_same_diagonal_route_releases_incompatible_cardinal_cache() -> None:
+    _reset_search_state()
+    game = Game([], width=800, height=600, direction="RIGHT_UP")
+    Game._active_route_direction = "RIGHT_UP"
+    Game._action_cache = "LEFT"
     released: list[bool] = []
 
     def record_release() -> None:

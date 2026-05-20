@@ -927,7 +927,11 @@ class Game:
         Game._active_route_direction = route_direction
         cached_action = (Game._action_cache or "").upper()
         cached_parts = set(cached_action.split("_")) if cached_action else set()
-        stale_cached_action = bool(cached_action and (route_direction is None or route_direction not in cached_parts))
+        route_parts = set(route_direction.split("_")) if route_direction else set()
+        opposite_pairs = ({"LEFT", "RIGHT"}, {"UP", "DOWN"})
+        has_opposite = any(pair.issubset(cached_parts | route_parts) for pair in opposite_pairs)
+        compatible_cache = bool(cached_parts & route_parts) and not has_opposite
+        stale_cached_action = bool(cached_action and not compatible_cache)
         stale_vertical_escape = bool(
             Game._vertical_escape_source_direction
             and Game._vertical_escape_source_direction != route_direction
