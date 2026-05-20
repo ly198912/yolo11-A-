@@ -83,8 +83,8 @@ class Game:
     _horizontal_move_y_deadzone = _env_float("DNF_HORIZONTAL_MOVE_Y_DEADZONE", 48.0)
     _horizontal_door_align_distance = _env_float("DNF_HORIZONTAL_DOOR_ALIGN_DISTANCE", 120.0)
     _diagonal_y_ratio = _env_float("DNF_DIAGONAL_Y_RATIO", 0.35)
-    _horizontal_edge_top_ratio = _env_float("DNF_HORIZONTAL_EDGE_TOP_RATIO", 0.22)
-    _horizontal_edge_bottom_ratio = _env_float("DNF_HORIZONTAL_EDGE_BOTTOM_RATIO", 0.80)
+    _horizontal_edge_top_ratio = _env_float("DNF_HORIZONTAL_EDGE_TOP_RATIO", 0.08)
+    _horizontal_edge_bottom_ratio = _env_float("DNF_HORIZONTAL_EDGE_BOTTOM_RATIO", 0.92)
     _down_stuck_anchor: Optional[Tuple[float, float]] = None
     _down_stuck_since = 0.0
     _down_right_search_until = 0.0
@@ -836,16 +836,7 @@ class Game:
             return None
         if route_direction == "LEFT" and dx >= 0:
             return None
-        if abs(dx) > Game._horizontal_door_align_distance:
-            dy = obj_box[1] - self._player_xywh[1]
-            diagonal_matches_door = (
-                ("_UP" in raw_route_direction and dy < -1)
-                or ("_DOWN" in raw_route_direction and dy > 1)
-            )
-            if "_" in raw_route_direction and diagonal_matches_door:
-                return self._avoid_screen_edge_for_search(route_direction, raw_route_direction)
-            return self._avoid_screen_edge_for_search(route_direction, route_direction)
-        return None
+        return self._avoid_screen_edge_for_search(route_direction, route_direction)
 
     def _limit_horizontal_search_vertical_command(self, route_direction: str, command: str) -> str:
         if route_direction not in {"LEFT", "RIGHT"} or "_" not in command:

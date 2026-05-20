@@ -247,7 +247,7 @@ def test_vertical_escape_right_search_keeps_lock_when_right_door_is_visible() ->
     Game._right_search_until_door = True
 
     assert game._continue_right_search_lock()
-    assert moves == ["RIGHT_DOWN"]
+    assert moves == ["RIGHT"]
     assert Game._right_search_anchor_x == 400.0
     assert Game._right_search_until_door
 
@@ -605,7 +605,7 @@ def test_diagonal_route_hint_uses_right_door_instead_of_fallbacking_up() -> None
     assert moves == ["RIGHT"]
 
 
-def test_diagonal_route_hint_keeps_vertical_when_door_matches_route() -> None:
+def test_diagonal_route_hint_still_moves_straight_to_right_door_when_door_is_high() -> None:
     _reset_search_state()
     game = Game(
         [
@@ -626,7 +626,31 @@ def test_diagonal_route_hint_keeps_vertical_when_door_matches_route() -> None:
 
     game.run()
 
-    assert moves == ["RIGHT_UP"]
+    assert moves == ["RIGHT"]
+
+
+def test_horizontal_route_moves_straight_to_close_right_door_without_vertical_wobble() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"door": {"xywh": [505.0, 410.0, 78.0, 101.0], "conf": 0.9}},
+            {"player": {"xywh": [417.0, 337.0, 57.0, 116.0], "conf": 0.9}},
+        ],
+        width=800,
+        height=600,
+        direction="RIGHT",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+
+    game.run()
+
+    assert moves == ["RIGHT"]
 
 
 def test_diagonal_route_hint_uses_cardinal_when_door_center_is_not_above() -> None:
