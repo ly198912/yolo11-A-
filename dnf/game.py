@@ -794,9 +794,13 @@ class Game:
         return mapping.get(direction, (direction,))
 
     def _get_route_direction_to_target(self, obj_box: Sequence[float], route_direction: Optional[str] = None) -> Optional[str]:
-        route_direction = self._current_door_direction() if route_direction is None else route_direction
-        route_direction = self._primary_door_direction(route_direction)
-        if route_direction not in {"LEFT", "RIGHT"} or not self._player_xywh:
+        raw_route_direction = self._current_door_direction() if route_direction is None else route_direction
+        if not raw_route_direction or not self._player_xywh:
+            return None
+
+        raw_route_direction = raw_route_direction.upper()
+        route_direction = self._primary_door_direction(raw_route_direction)
+        if route_direction not in {"LEFT", "RIGHT"}:
             return None
 
         dx = obj_box[0] - self._player_xywh[0]
@@ -805,6 +809,13 @@ class Game:
         if route_direction == "LEFT" and dx >= 0:
             return None
         if abs(dx) > Game._horizontal_door_align_distance:
+            dy = obj_box[1] - self._player_xywh[1]
+            diagonal_matches_door = (
+                ("_UP" in raw_route_direction and dy < -1)
+                or ("_DOWN" in raw_route_direction and dy > 1)
+            )
+            if "_" in raw_route_direction and diagonal_matches_door:
+                return self._avoid_screen_edge_for_search(route_direction, raw_route_direction)
             return self._avoid_screen_edge_for_search(route_direction, route_direction)
         return None
 
