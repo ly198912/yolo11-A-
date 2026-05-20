@@ -301,7 +301,7 @@ class Game:
                 filtered.append(door)
                 continue
 
-            if entry_side and door_side == entry_side:
+            if entry_side and door_side == entry_side and direction_hint != entry_side:
                 logger.info("ignore backtrack door at entry side {}: {}", entry_side, center)
                 continue
 
@@ -319,6 +319,8 @@ class Game:
 
     def _should_block_backtrack_direction(self, direction: Optional[str]) -> bool:
         if not direction or not self._is_entry_protected():
+            return False
+        if self._target_kind and self._target_kind != "query_missing":
             return False
         entry_side = self._reverse_direction(Game._flow_direction)
         if not entry_side:

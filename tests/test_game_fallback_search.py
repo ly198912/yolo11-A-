@@ -519,6 +519,61 @@ def test_visible_entry_door_is_ignored_after_combat_dragged_player_left() -> Non
     assert moves == ["RIGHT"]
 
 
+def test_entry_side_route_is_not_blocked_when_target_is_explicit() -> None:
+    _reset_search_state()
+    game = Game(
+        [{"player": {"xywh": [363.8671875, 277.734375, 72.0703125, 136.71875], "conf": 0.88}}],
+        width=800,
+        height=600,
+        direction="LEFT",
+        target_kind="query",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+    Game._room_entry_position = (400.0, 346.0)
+    Game._room_entry_time = time.time()
+    Game._flow_direction = "RIGHT"
+    Game._last_player_center = (399.0, 346.0)
+
+    game.run()
+
+    assert moves == ["LEFT"]
+
+
+def test_entry_side_door_is_allowed_when_route_explicitly_points_to_it() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"player": {"xywh": [363.8671875, 277.734375, 72.0703125, 136.71875], "conf": 0.88}},
+            {"door": {"xywh": [0.0, 300.0, 80.0, 100.0], "conf": 0.9}},
+        ],
+        width=800,
+        height=600,
+        direction="LEFT",
+        target_kind="query",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+    Game._room_entry_position = (400.0, 346.0)
+    Game._room_entry_time = time.time()
+    Game._flow_direction = "RIGHT"
+    Game._last_player_center = (399.0, 346.0)
+
+    game.run()
+
+    assert moves == ["LEFT"]
+
+
 def test_forward_door_selection_prefers_farther_right_door() -> None:
     _reset_search_state()
     game = Game(
