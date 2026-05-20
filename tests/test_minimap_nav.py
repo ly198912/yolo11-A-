@@ -116,7 +116,7 @@ def test_build_route_snapshot_uses_visible_boss_when_query_is_missing() -> None:
     assert snapshot.query_room is None
     assert snapshot.target_kind == "boss"
     assert snapshot.target_room == (3, 4)
-    assert snapshot.next_room_direction == "right_down"
+    assert snapshot.next_room_direction == "right"
 
 
 def test_universal_map_uses_large_top_right_search_box() -> None:
@@ -153,6 +153,31 @@ def test_marker_direction_can_route_without_room_grid() -> None:
     snapshot = navigator.build_route_snapshot(np.zeros((600, 800, 3), dtype=np.uint8), [])
 
     assert snapshot.target_kind == "query"
+    assert snapshot.next_room_direction == "right"
+
+
+def test_diagonal_marker_direction_uses_primary_axis_for_next_step() -> None:
+    navigator = MiniMapNavigator.__new__(MiniMapNavigator)
+    navigator.spec = MAP_SPECS["universal"]
+    navigator.last_direction = None
+    navigator.get_debug_scores = lambda frame: {}  # type: ignore[method-assign]
+    navigator.detect_room_markers = lambda frame: {  # type: ignore[method-assign]
+        "current_room": (4, 2),
+        "boss_room": (3, 4),
+        "query_room": None,
+        "elite_room": None,
+        "down_room": None,
+        "current_marker": (40.0, 80.0),
+        "boss_marker": (120.0, 50.0),
+        "query_marker": None,
+        "elite_marker": None,
+        "down_marker": None,
+    }
+    navigator._door_candidates_from_objects = lambda objects: []  # type: ignore[method-assign]
+
+    snapshot = navigator.build_route_snapshot(np.zeros((600, 800, 3), dtype=np.uint8), [])
+
+    assert snapshot.target_kind == "boss"
     assert snapshot.next_room_direction == "right"
 
 

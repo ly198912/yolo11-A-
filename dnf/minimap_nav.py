@@ -690,6 +690,22 @@ class MiniMapNavigator:
             return f"{horizontal}_{vertical}"
         return horizontal or vertical
 
+    def _marker_step_direction(
+        self,
+        current_marker: Tuple[float, float],
+        target_marker: Tuple[float, float],
+    ) -> Optional[str]:
+        dx = target_marker[0] - current_marker[0]
+        dy = target_marker[1] - current_marker[1]
+        direction = self._marker_direction(current_marker, target_marker)
+        if direction is None or "_" not in direction:
+            return direction
+
+        horizontal, vertical = direction.split("_", 1)
+        if abs(dx) >= abs(dy):
+            return horizontal
+        return vertical
+
     def _target_marker_for_kind(
         self,
         target_kind: Optional[str],
@@ -750,7 +766,7 @@ class MiniMapNavigator:
         next_room_direction = None
         target_marker = self._target_marker_for_kind(target_kind, room_info)
         if current_marker is not None and target_marker is not None:
-            next_room_direction = self._marker_direction(current_marker, target_marker)
+            next_room_direction = self._marker_step_direction(current_marker, target_marker)
         elif current_room is not None and query_room is None and target_room is None:
             target_kind = "query_missing"
             target_room = None
