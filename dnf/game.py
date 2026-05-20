@@ -117,6 +117,8 @@ class Game:
     _pickup_x_deadzone = _env_float("DNF_PICKUP_X_DEADZONE", 18.0)
     _pickup_y_sweep_x_range = _env_float("DNF_PICKUP_Y_SWEEP_X_RANGE", 120.0)
     _pickup_y_deadzone = _env_float("DNF_PICKUP_Y_DEADZONE", 14.0)
+    _route_pickup_cross_axis_limit = _env_float("DNF_ROUTE_PICKUP_CROSS_AXIS_LIMIT", 36.0)
+    _route_pickup_close_limit = _env_float("DNF_ROUTE_PICKUP_CLOSE_LIMIT", 42.0)
     _special_attack_key = _env_key("DNF_SPECIAL_ATTACK_KEY", "q")
     _special_attack_cooldown_range = _env_range("DNF_SPECIAL_ATTACK_COOLDOWN", (8.0, 9.0))
     _next_special_attack_time = 0.0
@@ -724,6 +726,32 @@ class Game:
 
         if direction:
             Game._action_cache = self._move(direction, is_slow=True, _action_cache=Game._action_cache)
+
+    def _pickup_can_interrupt_route(self, obj_box: Sequence[float]) -> bool:
+        if not self._player_xywh:
+            return False
+
+        route_direction = self._current_door_direction()
+        if not route_direction:
+            return True
+
+        target_x = obj_box[0]
+        target_y = obj_box[1]
+        dx = target_x - self._player_xywh[0]
+        dy = target_y - self._player_xywh[1]
+        abs_dx = abs(dx)
+        abs_dy = abs(dy)
+        close_limit = max(Game._route_pickup_close_limit, Game._pickup_y_deadzone * 2.0)
+        if abs_dx <= close_limit and abs_dy <= close_limit:
+            return True
+
+        cross_limit = max(Game._route_pickup_cross_axis_limit, Game._pickup_y_deadzone * 2.0)
+        parts = set(route_direction.upper().split("_"))
+        if parts & {"LEFT", "RIGHT"} and abs_dy > cross_limit:
+            return False
+        if parts & {"UP", "DOWN"} and abs_dx > cross_limit:
+            return False
+        return True
 
     def _move_to_door(self, obj_box: Sequence[float]) -> None:
         direction = self._get_route_direction_to_target(obj_box) or self._get_direction(obj_box)
@@ -1380,14 +1408,14 @@ class Game:
             goods = self._get_clss("goods")
             if goods:
                 nearest_goods = self._get_nearest(goods)
-                if nearest_goods:
+                if nearest_goods and self._pickup_can_interrupt_route(nearest_goods["xywh"]):
                     self._pick_up(nearest_goods["xywh"])
                     return
 
             money = self._get_clss("money")
             if money:
                 nearest_money = self._get_nearest(money)
-                if nearest_money:
+                if nearest_money and self._pickup_can_interrupt_route(nearest_money["xywh"]):
                     self._pick_up(nearest_money["xywh"])
                     return
 

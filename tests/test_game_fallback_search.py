@@ -765,3 +765,51 @@ def test_pickup_log_case_uses_x_axis_for_nearby_money() -> None:
     game._pick_up([409.765625, 402.734375, 54.6875, 30.46875])
 
     assert moves == ["RIGHT"]
+
+
+def test_route_money_far_below_does_not_interrupt_horizontal_route() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"money": {"xywh": [450.0, 455.859375, 56.25, 23.4375], "conf": 0.83}},
+            {"player": {"xywh": [413.28125, 335.546875, 74.21875, 120.3125], "conf": 0.8}},
+        ],
+        width=800,
+        height=600,
+        direction="RIGHT",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+
+    game.run()
+
+    assert moves == ["RIGHT"]
+
+
+def test_route_money_close_underfoot_can_interrupt_route() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"money": {"xywh": [455.0, 410.0, 56.25, 23.4375], "conf": 0.83}},
+            {"player": {"xywh": [413.28125, 335.546875, 74.21875, 120.3125], "conf": 0.8}},
+        ],
+        width=800,
+        height=600,
+        direction="RIGHT",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+
+    game.run()
+
+    assert moves == ["DOWN"]
