@@ -1443,6 +1443,9 @@ class Game:
                     if self._would_push_outside(direction_hint) and usable_doors:
                         logger.warning("route hint {} points outside screen edge, use nearest visible door", direction_hint)
                         nearest_door = self._get_nearest(usable_doors)
+                    elif direction_hint.upper() in {"UP", "DOWN", "LEFT", "RIGHT"} and len(usable_doors) == 1:
+                        logger.info("route hint {} has one usable visible door, move to it", direction_hint)
+                        nearest_door = self._get_nearest(usable_doors)
                     else:
                         logger.debug("doors found but none match route hint {}, keep following hint", direction_hint)
                         raise LookupError("no door matches route hint")

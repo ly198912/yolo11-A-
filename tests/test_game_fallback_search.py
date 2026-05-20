@@ -813,3 +813,27 @@ def test_route_money_close_underfoot_can_interrupt_route() -> None:
     game.run()
 
     assert moves == ["DOWN"]
+
+
+def test_vertical_route_uses_only_visible_nonmatching_door() -> None:
+    _reset_search_state()
+    game = Game(
+        [
+            {"player": {"xywh": [413.28125, 243.359375, 78.125, 133.59375], "conf": 0.89}},
+            {"door": {"xywh": [600.78125, 312.890625, 82.8125, 97.65625], "conf": 0.88}},
+        ],
+        width=800,
+        height=600,
+        direction="UP",
+    )
+    moves: list[str] = []
+
+    def record_move(direction: str, **kwargs) -> str:
+        moves.append(direction)
+        return direction
+
+    game._move = record_move  # type: ignore[method-assign]
+
+    game.run()
+
+    assert moves == ["RIGHT_DOWN"]
