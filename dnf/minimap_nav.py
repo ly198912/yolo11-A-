@@ -747,6 +747,12 @@ class MiniMapNavigator:
             boss_room=boss_room,
             prefer_special_room=prefer_special_room,
         )
+        if prefer_special_room and current_marker is not None and query_marker is not None:
+            query_direction = self._marker_step_direction(current_marker, query_marker)  # type: ignore[arg-type]
+            if query_direction is not None and current_room is not None and query_room == current_room:
+                target_kind = "query"
+                target_room = query_room
+
         if target_kind is None and prefer_special_room and current_marker is not None:
             marker_targets = (
                 ("query", query_room, query_marker),

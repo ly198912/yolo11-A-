@@ -215,5 +215,30 @@ def test_universal_query_marker_survives_bad_room_grid_mapping() -> None:
     assert snapshot.next_room_direction == "right"
 
 
+def test_query_marker_same_room_still_overrides_boss_when_marker_points_right() -> None:
+    navigator = MiniMapNavigator.__new__(MiniMapNavigator)
+    navigator.spec = MAP_SPECS["universal"]
+    navigator.last_direction = None
+    navigator.get_debug_scores = lambda frame: {}  # type: ignore[method-assign]
+    navigator.detect_room_markers = lambda frame: {  # type: ignore[method-assign]
+        "current_room": (4, 2),
+        "boss_room": (3, 4),
+        "query_room": (4, 2),
+        "elite_room": (3, 4),
+        "down_room": (3, 2),
+        "current_marker": (40.0, 80.0),
+        "boss_marker": (120.0, 20.0),
+        "query_marker": (112.0, 82.0),
+        "elite_marker": (120.0, 20.0),
+        "down_marker": (42.0, 30.0),
+    }
+    navigator._door_candidates_from_objects = lambda objects: []  # type: ignore[method-assign]
+
+    snapshot = navigator.build_route_snapshot(np.zeros((600, 800, 3), dtype=np.uint8), [])
+
+    assert snapshot.target_kind == "query"
+    assert snapshot.next_room_direction == "right"
+
+
 def test_only_universal_map_spec_is_available() -> None:
     assert list(MAP_SPECS) == ["universal"]
