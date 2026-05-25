@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -10,7 +9,7 @@ from loguru import logger
 
 
 class SkillReadinessDetector:
-    def __init__(self, assets_dir: Optional[Path] = None) -> None:
+    def __init__(self, assets_dir: Path | None = None) -> None:
         self.assets_dir = assets_dir or (Path(__file__).resolve().parent / "res")
         self.enabled = os.getenv("DNF_SKILL_ICON_ENABLED", "1") == "1"
         self.threshold = float(os.getenv("DNF_SKILL_ICON_THRESHOLD", "0.86"))
@@ -21,7 +20,7 @@ class SkillReadinessDetector:
         if self.enabled and self.ready_template is None:
             logger.warning("skill ready template missing: {}", self.assets_dir / "jn.png")
 
-    def _load_template_optional(self, filename: str) -> Optional[np.ndarray]:
+    def _load_template_optional(self, filename: str) -> np.ndarray | None:
         path = self.assets_dir / filename
         if not path.exists():
             return None
@@ -29,7 +28,7 @@ class SkillReadinessDetector:
         return image
 
     @staticmethod
-    def _score(image: np.ndarray, template: Optional[np.ndarray]) -> float:
+    def _score(image: np.ndarray, template: np.ndarray | None) -> float:
         if template is None:
             return 0.0
         image_h, image_w = image.shape[:2]
@@ -40,7 +39,7 @@ class SkillReadinessDetector:
         min_val, _, _, _ = cv2.minMaxLoc(result)
         return float(max(0.0, 1.0 - min_val))
 
-    def detect(self, frame_bgr: np.ndarray) -> Tuple[Optional[bool], dict[str, float]]:
+    def detect(self, frame_bgr: np.ndarray) -> tuple[bool | None, dict[str, float]]:
         if not self.enabled or self.ready_template is None:
             return None, {}
 
