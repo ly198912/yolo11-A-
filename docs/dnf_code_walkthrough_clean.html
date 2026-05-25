@@ -1,211 +1,223 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DNF 刷图代码逐段讲解版（清爽修正版）</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 14mm 12mm;
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DNF 刷图代码逐段讲解版（清爽修正版）</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 14mm 12mm;
+      }
 
-    :root {
-      --paper: #fffdfa;
-      --bg: #f6f0e6;
-      --ink: #1f2430;
-      --muted: #5e6878;
-      --line: #ddd2bc;
-      --code-bg: #f7f1da;
-      --code-border: #eadfbc;
-      --header: #f2ead9;
-      --explain: #fffef9;
-      --accent: #2452b6;
-      --note: #edf3ff;
-      --warn: #fff1e6;
-    }
+      :root {
+        --paper: #fffdfa;
+        --bg: #f6f0e6;
+        --ink: #1f2430;
+        --muted: #5e6878;
+        --line: #ddd2bc;
+        --code-bg: #f7f1da;
+        --code-border: #eadfbc;
+        --header: #f2ead9;
+        --explain: #fffef9;
+        --accent: #2452b6;
+        --note: #edf3ff;
+        --warn: #fff1e6;
+      }
 
-    * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
-      line-height: 1.78;
-    }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+        line-height: 1.78;
+      }
 
-    .wrap {
-      width: min(980px, calc(100% - 28px));
-      margin: 18px auto 28px;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 20px 18px 28px;
-    }
+      .wrap {
+        width: min(980px, calc(100% - 28px));
+        margin: 18px auto 28px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 20px 18px 28px;
+      }
 
-    h1, h2, h3 {
-      color: #222635;
-      margin-top: 0;
-    }
+      h1,
+      h2,
+      h3 {
+        color: #222635;
+        margin-top: 0;
+      }
 
-    h1 {
-      font-size: 32px;
-      margin-bottom: 10px;
-    }
+      h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+      }
 
-    h2 {
-      font-size: 24px;
-      margin-top: 30px;
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--line);
-    }
+      h2 {
+        font-size: 24px;
+        margin-top: 30px;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--line);
+      }
 
-    h3 {
-      font-size: 18px;
-      margin-top: 18px;
-      margin-bottom: 10px;
-    }
+      h3 {
+        font-size: 18px;
+        margin-top: 18px;
+        margin-bottom: 10px;
+      }
 
-    p {
-      margin: 0 0 12px;
-    }
+      p {
+        margin: 0 0 12px;
+      }
 
-    .lead, .note, .warn, .file-intro {
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin: 12px 0 16px;
-    }
+      .lead,
+      .note,
+      .warn,
+      .file-intro {
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 12px 0 16px;
+      }
 
-    .lead {
-      background: var(--note);
-      border-left: 4px solid var(--accent);
-    }
+      .lead {
+        background: var(--note);
+        border-left: 4px solid var(--accent);
+      }
 
-    .note {
-      background: #eef7ef;
-      border: 1px solid #c7dbc9;
-    }
+      .note {
+        background: #eef7ef;
+        border: 1px solid #c7dbc9;
+      }
 
-    .warn {
-      background: var(--warn);
-      border: 1px solid #e3ba91;
-    }
+      .warn {
+        background: var(--warn);
+        border: 1px solid #e3ba91;
+      }
 
-    .file-intro {
-      background: #faf7f0;
-      border: 1px solid var(--line);
-    }
+      .file-intro {
+        background: #faf7f0;
+        border: 1px solid var(--line);
+      }
 
-    .toc {
-      background: #faf6ee;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin: 14px 0 18px;
-    }
+      .toc {
+        background: #faf6ee;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 14px 0 18px;
+      }
 
-    .toc ol {
-      margin: 8px 0 0;
-      padding-left: 24px;
-    }
+      .toc ol {
+        margin: 8px 0 0;
+        padding-left: 24px;
+      }
 
-    .segment {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 16px 0 20px;
-      background: #fcfaf4;
-    }
+      .segment {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 16px 0 20px;
+        background: #fcfaf4;
+      }
 
-    .segment-title {
-      padding: 10px 14px;
-      background: var(--header);
-      border-bottom: 1px solid var(--line);
-      font-weight: 700;
-    }
+      .segment-title {
+        padding: 10px 14px;
+        background: var(--header);
+        border-bottom: 1px solid var(--line);
+        font-weight: 700;
+      }
 
-    .code-head {
-      padding: 8px 14px;
-      background: #fbf7ee;
-      color: var(--muted);
-      border-bottom: 1px solid var(--code-border);
-      font-size: 13px;
-    }
+      .code-head {
+        padding: 8px 14px;
+        background: #fbf7ee;
+        color: var(--muted);
+        border-bottom: 1px solid var(--code-border);
+        font-size: 13px;
+      }
 
-    pre {
-      margin: 0;
-      padding: 14px 16px;
-      background: var(--code-bg);
-      border-bottom: 1px solid var(--code-border);
-      overflow-x: auto;
-      white-space: pre-wrap;
-      font: 14px/1.62 Consolas, "Courier New", monospace;
-      color: #2a3040;
-    }
+      pre {
+        margin: 0;
+        padding: 14px 16px;
+        background: var(--code-bg);
+        border-bottom: 1px solid var(--code-border);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        font:
+          14px/1.62 Consolas,
+          "Courier New",
+          monospace;
+        color: #2a3040;
+      }
 
-    .explain {
-      padding: 14px 16px 16px;
-      background: var(--explain);
-    }
+      .explain {
+        padding: 14px 16px 16px;
+        background: var(--explain);
+      }
 
-    .explain h4 {
-      margin: 0 0 6px;
-      font-size: 15px;
-      color: var(--accent);
-    }
+      .explain h4 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        color: var(--accent);
+      }
 
-    code {
-      background: #f1ece1;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: Consolas, "Courier New", monospace;
-    }
+      code {
+        background: #f1ece1;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: Consolas, "Courier New", monospace;
+      }
 
-    .small {
-      font-size: 13px;
-      color: var(--muted);
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>DNF 刷图代码逐段讲解版</h1>
-    <p class="small">清爽修正版：修复乱码、去掉大量空白分页、保留“上面代码，下面解释”的排版方式。</p>
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>DNF 刷图代码逐段讲解版</h1>
+      <p class="small">清爽修正版：修复乱码、去掉大量空白分页、保留“上面代码，下面解释”的排版方式。</p>
 
-    <div class="lead">
-      这版我重新整理过两件事：第一，代码片段统一使用当前工作区里已经正常的中文源码；第二，去掉封面大留白和章节强制换页，改成连续阅读排版。你可以直接从上往下读，不会再出现大片空白。
-    </div>
+      <div class="lead">
+        这版我重新整理过两件事：第一，代码片段统一使用当前工作区里已经正常的中文源码；第二，去掉封面大留白和章节强制换页，改成连续阅读排版。你可以直接从上往下读，不会再出现大片空白。
+      </div>
 
-    <div class="warn">
-      当前真正参与刷图主流程的文件是：<code>main.py</code>、<code>detector.py</code>、<code>door_strategy.py</code>、<code>minimap_astar.py</code>、<code>minimap_nav.py</code>、<code>game.py</code>。
-      <code>olaplug</code> 目录虽然很大，但不是这条主刷图链里真正执行的核心代码，所以这次仍然放在附录说明，不抢主线。
-    </div>
+      <div class="warn">
+        当前真正参与刷图主流程的文件是：<code>main.py</code>、<code>detector.py</code>、<code>door_strategy.py</code>、<code>minimap_astar.py</code>、<code>minimap_nav.py</code>、<code>game.py</code>。
+        <code>olaplug</code> 目录虽然很大，但不是这条主刷图链里真正执行的核心代码，所以这次仍然放在附录说明，不抢主线。
+      </div>
 
-    <div class="toc">
-      <strong>目录</strong>
-      <ol>
-        <li><code>main.py</code>：总入口</li>
-        <li><code>detector.py</code>：YOLO 大画面检测</li>
-        <li><code>door_strategy.py</code>：门选择评分</li>
-        <li><code>minimap_astar.py</code>：A 星寻路</li>
-        <li><code>minimap_nav.py</code>：小地图识别与路线生成</li>
-        <li><code>game.py</code>：动作控制、打怪、拾取、过门、卡住恢复</li>
-        <li><code>minimap_route_demo.py</code>：导航测试脚本</li>
-      </ol>
-    </div>
+      <div class="toc">
+        <strong>目录</strong>
+        <ol>
+          <li><code>main.py</code>：总入口</li>
+          <li><code>detector.py</code>：YOLO 大画面检测</li>
+          <li><code>door_strategy.py</code>：门选择评分</li>
+          <li><code>minimap_astar.py</code>：A 星寻路</li>
+          <li><code>minimap_nav.py</code>：小地图识别与路线生成</li>
+          <li><code>game.py</code>：动作控制、打怪、拾取、过门、卡住恢复</li>
+          <li><code>minimap_route_demo.py</code>：导航测试脚本</li>
+        </ol>
+      </div>
 
-    <h2>第一章：<code>main.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      它是整个刷图程序的总入口。负责找窗口、摆窗口、截图、调用 YOLO 检测、调用小地图导航，再把结果交给 <code>Game</code> 去执行。
-    </div>
+      <h2>第一章：<code>main.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        它是整个刷图程序的总入口。负责找窗口、摆窗口、截图、调用 YOLO 检测、调用小地图导航，再把结果交给
+        <code>Game</code> 去执行。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：文件头、导入、路径兼容和窗口常量</div>
-      <div class="code-head">main.py 顶部</div>
-      <pre>#! /usr/bin/env python
+      <div class="segment">
+        <div class="segment-title">片段 1：文件头、导入、路径兼容和窗口常量</div>
+        <div class="code-head">main.py 顶部</div>
+        <pre>
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 @File    : main.py
@@ -236,21 +248,33 @@ from dnf.detector import Detector
 WINDOW_OFFSET_X = 10
 WINDOW_OFFSET_Y = 10
 WINDOW_TITLE_KEYWORD = "地下城与勇士"
-WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这一段先把主程序需要的库全部导进来。<code>cv2</code> 用来处理图像，<code>numpy</code> 接收截图数组，<code>pyautogui</code> 负责截图，<code>win32gui</code> 与 <code>win32con</code> 负责 Windows 窗口操作，<code>Game</code> 是动作层，<code>MiniMapNavigator</code> 是导航层，<code>Detector</code> 是 YOLO 检测层。</p>
-        <h4>执行逻辑</h4>
-        <p>这里还有一个路径兼容小技巧：把 <code>pathlib.PosixPath</code> 临时替换成 <code>WindowsPath</code>，是为了避免某些依赖在 Windows 下读路径时出问题。下面的几个常量则是后面找 DNF 窗口和摆窗口位置时要用的过滤条件和预设位置。</p>
-        <h4>它是干什么的</h4>
-        <p>这属于程序的基础设施区。还没开始刷图，但后面整个链条都会依赖这一段准备好的模块和常量。</p>
+WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>
+            这一段先把主程序需要的库全部导进来。<code>cv2</code> 用来处理图像，<code>numpy</code> 接收截图数组，<code
+              >pyautogui</code
+            >
+            负责截图，<code>win32gui</code> 与 <code>win32con</code> 负责 Windows 窗口操作，<code>Game</code>
+            是动作层，<code>MiniMapNavigator</code> 是导航层，<code>Detector</code> 是 YOLO 检测层。
+          </p>
+          <h4>执行逻辑</h4>
+          <p>
+            这里还有一个路径兼容小技巧：把 <code>pathlib.PosixPath</code> 临时替换成
+            <code>WindowsPath</code>，是为了避免某些依赖在 Windows 下读路径时出问题。下面的几个常量则是后面找 DNF
+            窗口和摆窗口位置时要用的过滤条件和预设位置。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这属于程序的基础设施区。还没开始刷图，但后面整个链条都会依赖这一段准备好的模块和常量。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：寻找 DNF 窗口</div>
-      <div class="code-head">函数 <code>_find_dnf_window()</code></div>
-      <pre>def _find_dnf_window() -&gt; int:
+      <div class="segment">
+        <div class="segment-title">片段 2：寻找 DNF 窗口</div>
+        <div class="code-head">函数 <code>_find_dnf_window()</code></div>
+        <pre>
+def _find_dnf_window() -&gt; int:
     candidates = []
 
     def _enum_windows(hwnd: int, _: object) -&gt; None:
@@ -287,21 +311,30 @@ WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}</p
         candidates[0][2],
         candidates[0][3],
     )
-    return hwnd</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这段代码负责在系统所有可见窗口中，把 DNF 窗口找出来，并返回它的句柄 <code>hwnd</code>。这个句柄可以理解为窗口在系统里的身份证。</p>
-        <h4>执行逻辑</h4>
-        <p>程序先遍历全部窗口，再按顺序做过滤：不可见的不要，标题和类名都为空的不要，标题和类名都不匹配 DNF 关键词的也不要。只有像 DNF 的窗口才会继续读取大小，并按面积加入候选列表。最后从候选里挑面积最大的那个窗口作为真正目标。</p>
-        <h4>它是干什么的</h4>
-        <p>它本质上不是后台绑定，而是确定“我要盯住哪一个窗口”。这一点很重要，因为后面的截图都要以这个窗口为中心。</p>
+    return hwnd</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>
+            这段代码负责在系统所有可见窗口中，把 DNF 窗口找出来，并返回它的句柄
+            <code>hwnd</code>。这个句柄可以理解为窗口在系统里的身份证。
+          </p>
+          <h4>执行逻辑</h4>
+          <p>
+            程序先遍历全部窗口，再按顺序做过滤：不可见的不要，标题和类名都为空的不要，标题和类名都不匹配 DNF
+            关键词的也不要。只有像 DNF
+            的窗口才会继续读取大小，并按面积加入候选列表。最后从候选里挑面积最大的那个窗口作为真正目标。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它本质上不是后台绑定，而是确定“我要盯住哪一个窗口”。这一点很重要，因为后面的截图都要以这个窗口为中心。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：把窗口恢复并摆到固定位置</div>
-      <div class="code-head">函数 <code>_place_window()</code></div>
-      <pre>def _place_window(hwnd: int) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 3：把窗口恢复并摆到固定位置</div>
+        <div class="code-head">函数 <code>_place_window()</code></div>
+        <pre>
+def _place_window(hwnd: int) -&gt; None:
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
     left, top, right, bottom = win32gui.GetWindowRect(hwnd)
     width = max(1, right - left)
@@ -314,21 +347,26 @@ WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}</p
         width,
         height,
         win32con.SWP_SHOWWINDOW,
-    )</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>找到窗口后，程序会把它恢复出来并移动到左上角附近的固定位置，这样截图更稳定。</p>
-        <h4>执行逻辑</h4>
-        <p><code>SW_RESTORE</code> 是把窗口从最小化状态恢复。然后读取窗口当前大小，再调用 <code>SetWindowPos()</code> 把它放到预设偏移位置，并设置成置顶显示。</p>
-        <h4>它是干什么的</h4>
-        <p>自动化最怕窗口位置乱变，这一步就是为了让后面的截图区域稳定下来。</p>
+    )</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>找到窗口后，程序会把它恢复出来并移动到左上角附近的固定位置，这样截图更稳定。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            <code>SW_RESTORE</code> 是把窗口从最小化状态恢复。然后读取窗口当前大小，再调用
+            <code>SetWindowPos()</code> 把它放到预设偏移位置，并设置成置顶显示。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>自动化最怕窗口位置乱变，这一步就是为了让后面的截图区域稳定下来。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 4：计算客户区并截图</div>
-      <div class="code-head">函数 <code>_get_client_region()</code> 与 <code>_capture_client()</code></div>
-      <pre>def _get_client_region(hwnd: int) -&gt; Tuple[int, int, int, int]:
+      <div class="segment">
+        <div class="segment-title">片段 4：计算客户区并截图</div>
+        <div class="code-head">函数 <code>_get_client_region()</code> 与 <code>_capture_client()</code></div>
+        <pre>
+def _get_client_region(hwnd: int) -&gt; Tuple[int, int, int, int]:
     left_top = win32gui.ClientToScreen(hwnd, (0, 0))
     client_rect = win32gui.GetClientRect(hwnd)
     left = int(left_top[0])
@@ -344,41 +382,52 @@ def _capture_client(hwnd: int) -&gt; Tuple[np.ndarray, Tuple[int, int]]:
     left, top, width, height = _get_client_region(hwnd)
     img = pyautogui.screenshot(region=(left, top, width, height))
     img_np = np.array(img)
-    return img_np, (width, height)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这段代码真正把游戏画面截下来。注意这里截的是客户区，也就是真正显示游戏内容的区域，不包括标题栏和边框。</p>
-        <h4>执行逻辑</h4>
-        <p>程序先用 <code>ClientToScreen()</code> 得到客户区左上角的屏幕坐标，再用 <code>GetClientRect()</code> 得到客户区宽高。之后用这组矩形参数调用 <code>pyautogui.screenshot()</code> 截图，并转成 <code>numpy</code> 数组，供 OpenCV 和 YOLO 使用。</p>
-        <h4>它是干什么的</h4>
-        <p>这一步就是给整个识别链路喂原始视觉输入。没有截图，后面的识别和导航都无从谈起。</p>
+    return img_np, (width, height)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这段代码真正把游戏画面截下来。注意这里截的是客户区，也就是真正显示游戏内容的区域，不包括标题栏和边框。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            程序先用 <code>ClientToScreen()</code> 得到客户区左上角的屏幕坐标，再用
+            <code>GetClientRect()</code> 得到客户区宽高。之后用这组矩形参数调用
+            <code>pyautogui.screenshot()</code> 截图，并转成 <code>numpy</code> 数组，供 OpenCV 和 YOLO 使用。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这一步就是给整个识别链路喂原始视觉输入。没有截图，后面的识别和导航都无从谈起。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 5：主函数初始化</div>
-      <div class="code-head">函数 <code>main()</code> 开头</div>
-      <pre>def main() -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 5：主函数初始化</div>
+        <div class="code-head">函数 <code>main()</code> 开头</div>
+        <pre>
+def main() -&gt; None:
     device_type = ""
     detector = Detector(device_type)
     navigator = MiniMapNavigator("generic")
 
     hwnd = _find_dnf_window()
-    _place_window(hwnd)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>主函数开始时，会先把大画面检测器和小地图导航器都准备好，然后找并摆好 DNF 窗口。</p>
-        <h4>执行逻辑</h4>
-        <p><code>device_type = ""</code> 代表让检测器自己决定用 GPU 还是 CPU。<code>MiniMapNavigator("generic")</code> 表示当前默认按 <code>generic</code> 地图规格处理小地图。</p>
-        <h4>它是干什么的</h4>
-        <p>这是进入主循环前的一次性准备步骤。模型和导航器只需要初始化一次，不必每帧都重建。</p>
+    _place_window(hwnd)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>主函数开始时，会先把大画面检测器和小地图导航器都准备好，然后找并摆好 DNF 窗口。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            <code>device_type = ""</code> 代表让检测器自己决定用 GPU 还是 CPU。<code>MiniMapNavigator("generic")</code>
+            表示当前默认按 <code>generic</code> 地图规格处理小地图。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是进入主循环前的一次性准备步骤。模型和导航器只需要初始化一次，不必每帧都重建。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 6：主循环里截图、检测和导航</div>
-      <div class="code-head">函数 <code>main()</code> 中段</div>
-      <pre>    while True:
+      <div class="segment">
+        <div class="segment-title">片段 6：主循环里截图、检测和导航</div>
+        <div class="code-head">函数 <code>main()</code> 中段</div>
+        <pre>
+    while True:
         start_time = time.time()
         try:
             img_np, (width, height) = _capture_client(hwnd)
@@ -396,21 +445,27 @@ def _capture_client(hwnd: int) -&gt; Tuple[np.ndarray, Tuple[int, int]]:
             route_snapshot.next_room_direction.upper()
             if route_snapshot.next_room_direction
             else None
-        )</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这是主循环的核心前半段：先截图，再做大画面检测，再做小地图导航，最终拿到房间级方向提示。</p>
-        <h4>执行逻辑</h4>
-        <p>先截图；若截图失败，则记录异常、稍作等待后直接重来。截图成功后，把图送进 YOLO 检测器，得到检测框和可视化图。然后把原图转成 BGR，送进导航器。导航器会把小地图识别结果和大画面门、玩家信息结合起来，得到当前房间、目标房间和下一步方向。</p>
-        <h4>它是干什么的</h4>
-        <p>这一段相当于“看图并思考路线”，它只负责得出判断，不负责实际按键。</p>
+        )</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这是主循环的核心前半段：先截图，再做大画面检测，再做小地图导航，最终拿到房间级方向提示。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先截图；若截图失败，则记录异常、稍作等待后直接重来。截图成功后，把图送进 YOLO
+            检测器，得到检测框和可视化图。然后把原图转成
+            BGR，送进导航器。导航器会把小地图识别结果和大画面门、玩家信息结合起来，得到当前房间、目标房间和下一步方向。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这一段相当于“看图并思考路线”，它只负责得出判断，不负责实际按键。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 7：把方向交给动作层执行</div>
-      <div class="code-head">函数 <code>main()</code> 结尾</div>
-      <pre>        logger.info(
+      <div class="segment">
+        <div class="segment-title">片段 7：把方向交给动作层执行</div>
+        <div class="code-head">函数 <code>main()</code> 结尾</div>
+        <pre>
+        logger.info(
             "route: current={}, boss={}, query={}, elite={}, down={}, direction={}, door={}, scores={}",
             route_snapshot.current_room,
             route_snapshot.boss_room,
@@ -435,27 +490,34 @@ def _capture_client(hwnd: int) -&gt; Tuple[np.ndarray, Tuple[int, int]]:
 
 
 if __name__ == "__main__":
-    main()</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这里把识别和导航的结果交给动作层 <code>Game</code>，让动作层决定这一帧该打怪、捡东西还是朝门移动。</p>
-        <h4>执行逻辑</h4>
-        <p>先输出路线调试信息，再创建 <code>Game</code> 对象，并把检测结果、画面尺寸和路线方向交给它。<code>game.run()</code> 会真正执行本帧行为。后面还会显示一个缩放后的检测窗口，方便开发者肉眼检查识别效果。</p>
-        <h4>它是干什么的</h4>
-        <p><code>main.py</code> 在这里完成了自己的使命：把“看”和“想”的结果，转交给“动”的部分去执行。</p>
+    main()</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这里把识别和导航的结果交给动作层 <code>Game</code>，让动作层决定这一帧该打怪、捡东西还是朝门移动。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先输出路线调试信息，再创建 <code>Game</code> 对象，并把检测结果、画面尺寸和路线方向交给它。<code
+              >game.run()</code
+            >
+            会真正执行本帧行为。后面还会显示一个缩放后的检测窗口，方便开发者肉眼检查识别效果。
+          </p>
+          <h4>它是干什么的</h4>
+          <p><code>main.py</code> 在这里完成了自己的使命：把“看”和“想”的结果，转交给“动”的部分去执行。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第二章：<code>detector.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      用 YOLO 模型识别大画面中的玩家、怪物、Boss、门、金币和掉落物，是程序的第一只眼睛。
-    </div>
+      <h2>第二章：<code>detector.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        用 YOLO 模型识别大画面中的玩家、怪物、Boss、门、金币和掉落物，是程序的第一只眼睛。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：初始化检测器</div>
-      <div class="code-head">类 <code>Detector</code> 的 <code>__init__</code></div>
-      <pre>class Detector:
+      <div class="segment">
+        <div class="segment-title">片段 1：初始化检测器</div>
+        <div class="code-head">类 <code>Detector</code> 的 <code>__init__</code></div>
+        <pre>
+class Detector:
     def __init__(self, device_type: str = ""):
         self.img_size = 640
         self.conf_thres = 0.75
@@ -467,21 +529,26 @@ if __name__ == "__main__":
         self.weights = str(Path(__file__).resolve().parent / "shzn.pt")
         self.model = YOLO(self.weights)
         self.names = self.model.names
-        self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.names))]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这段代码负责把 YOLO 模型真正加载起来，并设置推理参数。</p>
-        <h4>执行逻辑</h4>
-        <p><code>img_size</code> 指输入模型的尺寸，<code>conf_thres</code> 是置信度阈值，<code>iou_thres</code> 是 NMS 去重阈值。程序会自动优先使用 GPU，不行再退回 CPU。模型文件是本地的 <code>shzn.pt</code>。</p>
-        <h4>它是干什么的</h4>
-        <p>这是检测器的开机步骤。没有这一步，程序后面就不知道画面里哪些框是怪、哪些框是门。</p>
+        self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.names))]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这段代码负责把 YOLO 模型真正加载起来，并设置推理参数。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            <code>img_size</code> 指输入模型的尺寸，<code>conf_thres</code> 是置信度阈值，<code>iou_thres</code> 是 NMS
+            去重阈值。程序会自动优先使用 GPU，不行再退回 CPU。模型文件是本地的 <code>shzn.pt</code>。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是检测器的开机步骤。没有这一步，程序后面就不知道画面里哪些框是怪、哪些框是门。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：标准化标签和坐标格式</div>
-      <div class="code-head">两个静态工具函数</div>
-      <pre>@staticmethod
+      <div class="segment">
+        <div class="segment-title">片段 2：标准化标签和坐标格式</div>
+        <div class="code-head">两个静态工具函数</div>
+        <pre>
+@staticmethod
 def _normalize_label(label: str) -&gt; str:
     label = str(label).strip().lower()
     if "door" in label:
@@ -491,21 +558,26 @@ def _normalize_label(label: str) -&gt; str:
 @staticmethod
 def _xyxy_to_xywh_top_left(xyxy: np.ndarray) -&gt; List[float]:
     x1, y1, x2, y2 = [float(v) for v in xyxy]
-    return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把模型吐出来的数据整理成统一格式。标签统一成小写字符串，门相关的标签统一叫 <code>door</code>；同时把坐标框从 <code>xyxy</code> 转成 <code>xywh</code>。</p>
-        <h4>执行逻辑</h4>
-        <p>这样做后，后面的动作层和导航层就不需要各自重复解析坐标和标签了。</p>
-        <h4>它是干什么的</h4>
-        <p>这是一个典型的数据清洗层，目的是让后面的模块使用同样的输入结构。</p>
+    return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>
+            把模型吐出来的数据整理成统一格式。标签统一成小写字符串，门相关的标签统一叫 <code>door</code>；同时把坐标框从
+            <code>xyxy</code> 转成 <code>xywh</code>。
+          </p>
+          <h4>执行逻辑</h4>
+          <p>这样做后，后面的动作层和导航层就不需要各自重复解析坐标和标签了。</p>
+          <h4>它是干什么的</h4>
+          <p>这是一个典型的数据清洗层，目的是让后面的模块使用同样的输入结构。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：检测函数入口</div>
-      <div class="code-head">函数 <code>detect()</code> 开头</div>
-      <pre>def detect(self, img0: np.ndarray) -&gt; Tuple[np.ndarray | None, list | None]:
+      <div class="segment">
+        <div class="segment-title">片段 3：检测函数入口</div>
+        <div class="code-head">函数 <code>detect()</code> 开头</div>
+        <pre>
+def detect(self, img0: np.ndarray) -&gt; Tuple[np.ndarray | None, list | None]:
     if img0 is None:
         return None, None
 
@@ -517,21 +589,23 @@ def _xyxy_to_xywh_top_left(xyxy: np.ndarray) -&gt; List[float]:
         iou=self.iou_thres,
         device=self.device,
         verbose=False,
-    )[0]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这段代码真正开始对当前截图做 YOLO 目标检测。</p>
-        <h4>执行逻辑</h4>
-        <p>如果输入图片为空，就直接返回空结果，防止程序出错。否则先把 RGB 转成 BGR，再把图像送进模型预测。</p>
-        <h4>它是干什么的</h4>
-        <p>从这里开始，程序就真正“看见”画面了。</p>
+    )[0]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这段代码真正开始对当前截图做 YOLO 目标检测。</p>
+          <h4>执行逻辑</h4>
+          <p>如果输入图片为空，就直接返回空结果，防止程序出错。否则先把 RGB 转成 BGR，再把图像送进模型预测。</p>
+          <h4>它是干什么的</h4>
+          <p>从这里开始，程序就真正“看见”画面了。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 4：整理检测结果</div>
-      <div class="code-head">函数 <code>detect()</code> 后半段</div>
-      <pre>annotator = Annotator(img_bgr.copy(), line_width=3, example=self.names)
+      <div class="segment">
+        <div class="segment-title">片段 4：整理检测结果</div>
+        <div class="code-head">函数 <code>detect()</code> 后半段</div>
+        <pre>
+annotator = Annotator(img_bgr.copy(), line_width=3, example=self.names)
 obj = []
 
 if result.boxes is not None and len(result.boxes) &gt; 0:
@@ -552,27 +626,32 @@ if result.boxes is not None and len(result.boxes) &gt; 0:
         )
         obj.append({label: {"xywh": xywh, "conf": conf}})
 
-return annotator.result(), obj</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把模型原始输出整理成程序更容易使用的对象列表，同时顺手把检测框画到图上。</p>
-        <h4>执行逻辑</h4>
-        <p>每个框都会被拆成类别、置信度和位置。类别经过标准化，位置经过坐标转换，最后存入 <code>obj</code> 列表。这个 <code>obj</code> 就是后面打怪、捡东西、过门的直接依据。</p>
-        <h4>它是干什么的</h4>
-        <p>前者是给程序看的结构化结果，后者是给人看的调试可视化图。</p>
+return annotator.result(), obj</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把模型原始输出整理成程序更容易使用的对象列表，同时顺手把检测框画到图上。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            每个框都会被拆成类别、置信度和位置。类别经过标准化，位置经过坐标转换，最后存入 <code>obj</code> 列表。这个
+            <code>obj</code> 就是后面打怪、捡东西、过门的直接依据。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>前者是给程序看的结构化结果，后者是给人看的调试可视化图。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第三章：<code>door_strategy.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      当 A 星告诉程序“下一间房在右边”时，这里负责在当前画面多扇门里找出最像“右门”的那一扇。
-    </div>
+      <h2>第三章：<code>door_strategy.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        当 A 星告诉程序“下一间房在右边”时，这里负责在当前画面多扇门里找出最像“右门”的那一扇。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：门数据结构和方向取反</div>
-      <div class="code-head">文件顶部</div>
-      <pre>@dataclass
+      <div class="segment">
+        <div class="segment-title">片段 1：门数据结构和方向取反</div>
+        <div class="code-head">文件顶部</div>
+        <pre>
+@dataclass
 class DoorCandidate:
     bbox: Sequence[float]
     center: Point
@@ -585,21 +664,23 @@ def opposite_direction(direction: Optional[str]) -&gt; Optional[str]:
         "up": "down",
         "down": "up",
     }
-    return mapping.get(direction)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>先把门封装成统一结构，再提供一个“求反方向”的工具函数。</p>
-        <h4>执行逻辑</h4>
-        <p>后面选门时既要知道门中心点，也要知道上一次路线方向是不是反向掉头，所以这两个工具都很基础。</p>
-        <h4>它是干什么的</h4>
-        <p>这是门策略的底层数据准备层。</p>
+    return mapping.get(direction)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>先把门封装成统一结构，再提供一个“求反方向”的工具函数。</p>
+          <h4>执行逻辑</h4>
+          <p>后面选门时既要知道门中心点，也要知道上一次路线方向是不是反向掉头，所以这两个工具都很基础。</p>
+          <h4>它是干什么的</h4>
+          <p>这是门策略的底层数据准备层。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：计算偏移和方向匹配</div>
-      <div class="code-head">两个小函数</div>
-      <pre>def _axis_offsets(player: Point, door: Point) -&gt; Tuple[float, float]:
+      <div class="segment">
+        <div class="segment-title">片段 2：计算偏移和方向匹配</div>
+        <div class="code-head">两个小函数</div>
+        <pre>
+def _axis_offsets(player: Point, door: Point) -&gt; Tuple[float, float]:
     dx = door[0] - player[0]
     dy = door[1] - player[1]
     return dx, dy
@@ -614,21 +695,23 @@ def _direction_match(expected_direction: str, dx: float, dy: float, margin: floa
         return dy &lt; -margin
     if expected_direction == "down":
         return dy &gt; margin
-    return True</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>判断一扇门相对玩家到底偏在哪边，以及它算不算符合当前期望方向。</p>
-        <h4>执行逻辑</h4>
-        <p><code>margin</code> 是容差。比如期望向右时，门必须明显在玩家右边，不能只是刚好挨着中线。</p>
-        <h4>它是干什么的</h4>
-        <p>这是把 A 星方向和屏幕中门位置联系起来的第一步。</p>
+    return True</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>判断一扇门相对玩家到底偏在哪边，以及它算不算符合当前期望方向。</p>
+          <h4>执行逻辑</h4>
+          <p><code>margin</code> 是容差。比如期望向右时，门必须明显在玩家右边，不能只是刚好挨着中线。</p>
+          <h4>它是干什么的</h4>
+          <p>这是把 A 星方向和屏幕中门位置联系起来的第一步。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：核心选门算法</div>
-      <div class="code-head">函数 <code>choose_best_door()</code></div>
-      <pre>def choose_best_door(
+      <div class="segment">
+        <div class="segment-title">片段 3：核心选门算法</div>
+        <div class="code-head">函数 <code>choose_best_door()</code></div>
+        <pre>
+def choose_best_door(
     doors: Sequence[DoorCandidate],
     player_center: Point,
     expected_direction: Optional[str],
@@ -671,27 +754,31 @@ def _direction_match(expected_direction: str, dx: float, dy: float, margin: floa
         return candidates[0][1]
 
     fallback.sort(key=lambda item: item[0])
-    return fallback[0][1]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这是门选择的核心算法。它会对每扇门打分，再选出最适合当前路线方向的那一扇。</p>
-        <h4>执行逻辑</h4>
-        <p>没有门时直接返回空；没有方向提示时，选最近门。有方向提示时，对每扇门计算三个维度：前进量、侧向偏移、总距离，同时还会给明显的反方向门加一个很大的惩罚。匹配方向的门会进入优先候选；全部门都会进入兜底候选。最终优先从匹配候选中取分数最好的，没有才用兜底。</p>
-        <h4>它是干什么的</h4>
-        <p>它的本质不是复杂数学，而是一个很实用的启发式评分器：尽量选既符合方向、又不偏、又不远的门。</p>
+    return fallback[0][1]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这是门选择的核心算法。它会对每扇门打分，再选出最适合当前路线方向的那一扇。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            没有门时直接返回空；没有方向提示时，选最近门。有方向提示时，对每扇门计算三个维度：前进量、侧向偏移、总距离，同时还会给明显的反方向门加一个很大的惩罚。匹配方向的门会进入优先候选；全部门都会进入兜底候选。最终优先从匹配候选中取分数最好的，没有才用兜底。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它的本质不是复杂数学，而是一个很实用的启发式评分器：尽量选既符合方向、又不偏、又不远的门。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第四章：<code>minimap_astar.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      做房间级 A 星寻路。注意它输出的是“下一间房往哪边走”，不是房间内部的像素级路径。
-    </div>
+      <h2>第四章：<code>minimap_astar.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        做房间级 A 星寻路。注意它输出的是“下一间房往哪边走”，不是房间内部的像素级路径。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：节点结构与曼哈顿启发</div>
-      <div class="code-head">文件顶部</div>
-      <pre>@dataclass(order=True)
+      <div class="segment">
+        <div class="segment-title">片段 1：节点结构与曼哈顿启发</div>
+        <div class="code-head">文件顶部</div>
+        <pre>
+@dataclass(order=True)
 class _Node:
     f: int
     position: GridPoint
@@ -701,21 +788,26 @@ class _Node:
 
 
 def heuristic(a: GridPoint, b: GridPoint) -&gt; int:
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>定义 A 星节点和启发函数。<code>f = g + h</code> 是 A 星最核心的评分逻辑。</p>
-        <h4>执行逻辑</h4>
-        <p><code>g</code> 表示已经走过的代价，<code>h</code> 是到终点的估计代价，这里用曼哈顿距离，因为地图只考虑上下左右移动。</p>
-        <h4>它是干什么的</h4>
-        <p>这是整个寻路算法的地基。</p>
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>定义 A 星节点和启发函数。<code>f = g + h</code> 是 A 星最核心的评分逻辑。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            <code>g</code> 表示已经走过的代价，<code>h</code>
+            是到终点的估计代价，这里用曼哈顿距离，因为地图只考虑上下左右移动。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是整个寻路算法的地基。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：邻居扩展顺序</div>
-      <div class="code-head">函数 <code>_neighbors()</code></div>
-      <pre>def _neighbors(position: GridPoint, grid: Sequence[Sequence[int]], priority: str):
+      <div class="segment">
+        <div class="segment-title">片段 2：邻居扩展顺序</div>
+        <div class="code-head">函数 <code>_neighbors()</code></div>
+        <pre>
+def _neighbors(position: GridPoint, grid: Sequence[Sequence[int]], priority: str):
     x, y = position
     directions = {
         "right": ((0, 1), (1, 0), (-1, 0), (0, -1)),
@@ -723,21 +815,23 @@ def heuristic(a: GridPoint, b: GridPoint) -&gt; int:
         "up": ((-1, 0), (0, -1), (0, 1), (1, 0)),
         "down": ((1, 0), (0, 1), (0, -1), (-1, 0)),
         "default": ((0, 1), (1, 0), (-1, 0), (0, -1)),
-    }</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>决定当前节点应该优先往哪个方向扩展邻居。比如优先级是右，就先看右再看别的方向。</p>
-        <h4>执行逻辑</h4>
-        <p>这不会改变最短路的正确性，但在多条路径一样短时，会影响程序更偏向哪一条。</p>
-        <h4>它是干什么的</h4>
-        <p>你可以把它理解成“同分情况下的路线偏好”。</p>
+    }</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>决定当前节点应该优先往哪个方向扩展邻居。比如优先级是右，就先看右再看别的方向。</p>
+          <h4>执行逻辑</h4>
+          <p>这不会改变最短路的正确性，但在多条路径一样短时，会影响程序更偏向哪一条。</p>
+          <h4>它是干什么的</h4>
+          <p>你可以把它理解成“同分情况下的路线偏好”。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：A 星主循环</div>
-      <div class="code-head">函数 <code>a_star()</code></div>
-      <pre>def a_star(grid, start, end, priority="right"):
+      <div class="segment">
+        <div class="segment-title">片段 3：A 星主循环</div>
+        <div class="code-head">函数 <code>a_star()</code></div>
+        <pre>
+def a_star(grid, start, end, priority="right"):
     if start == end:
         return [start]
 
@@ -778,21 +872,26 @@ def heuristic(a: GridPoint, b: GridPoint) -&gt; int:
                     parent=current,
                 ),
             )
-    return None</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这就是完整的 A 星搜索过程：不断取出当前最优节点，直到找到终点并回溯出整条路径。</p>
-        <h4>执行逻辑</h4>
-        <p>开放列表里永远是“可能值得继续探索”的节点。每次取出 <code>f</code> 最小的那个，扩展邻居；如果到了终点，就沿着 <code>parent</code> 链一路回溯生成路径。</p>
-        <h4>它是干什么的</h4>
-        <p>它在整套程序里负责房间级最短路搜索，是导航层最核心的算法。</p>
+    return None</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这就是完整的 A 星搜索过程：不断取出当前最优节点，直到找到终点并回溯出整条路径。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            开放列表里永远是“可能值得继续探索”的节点。每次取出 <code>f</code> 最小的那个，扩展邻居；如果到了终点，就沿着
+            <code>parent</code> 链一路回溯生成路径。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它在整套程序里负责房间级最短路搜索，是导航层最核心的算法。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 4：只取路径第一步方向</div>
-      <div class="code-head">函数 <code>judge_direction()</code> 与 <code>next_direction()</code></div>
-      <pre>def judge_direction(starting_point: GridPoint, end_point: GridPoint) -&gt; Optional[str]:
+      <div class="segment">
+        <div class="segment-title">片段 4：只取路径第一步方向</div>
+        <div class="code-head">函数 <code>judge_direction()</code> 与 <code>next_direction()</code></div>
+        <pre>
+def judge_direction(starting_point: GridPoint, end_point: GridPoint) -&gt; Optional[str]:
     x1, y1 = starting_point
     x2, y2 = end_point
     if x2 &gt; x1:
@@ -810,27 +909,32 @@ def next_direction(grid, start, end, priority="right") -&gt; Optional[str]:
     path = a_star(grid, start, end, priority=priority)
     if not path or len(path) &lt; 2:
         return None
-    return judge_direction(path[0], path[1])</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把整条路径压缩成一个最重要的信息：下一步往哪边走。</p>
-        <h4>执行逻辑</h4>
-        <p>当前系统并不把整条房间路径都交给动作层，而是只取前两点之间的方向，这样动作层只需要关心“下一间房在上、下、左、右哪边”。</p>
-        <h4>它是干什么的</h4>
-        <p>这是 A 星和动作层衔接的出口。A 星不直接控制角色移动，只负责给出方向提示。</p>
+    return judge_direction(path[0], path[1])</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把整条路径压缩成一个最重要的信息：下一步往哪边走。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            当前系统并不把整条房间路径都交给动作层，而是只取前两点之间的方向，这样动作层只需要关心“下一间房在上、下、左、右哪边”。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是 A 星和动作层衔接的出口。A 星不直接控制角色移动，只负责给出方向提示。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第五章：<code>minimap_nav.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      它是小地图导航中心：裁小地图、匹配图标、识别当前房间和目标房间、调用 A 星，并尝试把房间方向关联到当前画面中的门。
-    </div>
+      <h2>第五章：<code>minimap_nav.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        它是小地图导航中心：裁小地图、匹配图标、识别当前房间和目标房间、调用 A
+        星，并尝试把房间方向关联到当前画面中的门。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：地图规格与路线快照结构</div>
-      <div class="code-head">顶部数据结构</div>
-      <pre>@dataclass
+      <div class="segment">
+        <div class="segment-title">片段 1：地图规格与路线快照结构</div>
+        <div class="code-head">顶部数据结构</div>
+        <pre>
+@dataclass
 class MapSpec:
     name: str
     crop_rect_1067: Rect
@@ -850,21 +954,25 @@ class RouteSnapshot:
     down_room: Optional[Point]
     next_room_direction: Optional[str]
     selected_door_center: Optional[Tuple[float, float]]
-    debug_scores: Optional[Dict[str, float]] = None</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p><code>MapSpec</code> 描述地图该怎么被理解，<code>RouteSnapshot</code> 描述导航器本轮最终算出来的完整结果。</p>
-        <h4>执行逻辑</h4>
-        <p>前者更像配置表，后者更像每一帧的输出结果包。</p>
-        <h4>它是干什么的</h4>
-        <p>这是导航层的数据骨架。</p>
+    debug_scores: Optional[Dict[str, float]] = None</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>
+            <code>MapSpec</code> 描述地图该怎么被理解，<code>RouteSnapshot</code> 描述导航器本轮最终算出来的完整结果。
+          </p>
+          <h4>执行逻辑</h4>
+          <p>前者更像配置表，后者更像每一帧的输出结果包。</p>
+          <h4>它是干什么的</h4>
+          <p>这是导航层的数据骨架。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：地图字典</div>
-      <div class="code-head"><code>MAP_SPECS</code></div>
-      <pre>def _all_walkable(rows: int, cols: int) -&gt; List[List[int]]:
+      <div class="segment">
+        <div class="segment-title">片段 2：地图字典</div>
+        <div class="code-head"><code>MAP_SPECS</code></div>
+        <pre>
+def _all_walkable(rows: int, cols: int) -&gt; List[List[int]]:
     return [[0 for _ in range(cols)] for _ in range(rows)]
 
 
@@ -887,21 +995,23 @@ MAP_SPECS = {
         cols=5,
         room_grid=_all_walkable(4, 5),
     ),
-}</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>定义不同地图模板的裁剪区域和房间网格规模。</p>
-        <h4>执行逻辑</h4>
-        <p>当前这份代码中的 <code>room_grid</code> 基本是全 0，也就是默认所有房间位置都可通行。</p>
-        <h4>它是干什么的</h4>
-        <p>它告诉导航器“这张地图应该怎么切、怎么分格子、A 星要在哪张网格上跑”。</p>
+}</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>定义不同地图模板的裁剪区域和房间网格规模。</p>
+          <h4>执行逻辑</h4>
+          <p>当前这份代码中的 <code>room_grid</code> 基本是全 0，也就是默认所有房间位置都可通行。</p>
+          <h4>它是干什么的</h4>
+          <p>它告诉导航器“这张地图应该怎么切、怎么分格子、A 星要在哪张网格上跑”。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：初始化导航器并加载模板</div>
-      <div class="code-head">类 <code>MiniMapNavigator</code> 的 <code>__init__</code></div>
-      <pre>def __init__(self, map_name: str = "generic", assets_dir: Optional[Path] = None, threshold: float = 0.7):
+      <div class="segment">
+        <div class="segment-title">片段 3：初始化导航器并加载模板</div>
+        <div class="code-head">类 <code>MiniMapNavigator</code> 的 <code>__init__</code></div>
+        <pre>
+def __init__(self, map_name: str = "generic", assets_dir: Optional[Path] = None, threshold: float = 0.7):
     if map_name not in MAP_SPECS:
         map_name = "generic"
     self.map_name = map_name
@@ -922,21 +1032,26 @@ MAP_SPECS = {
     down_template = self._load_template_optional("map_down.png")
     if down_template is not None:
         self.templates["down"] = down_template
-    self.last_direction: Optional[str] = None</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把小地图导航器准备好，并把所有图标模板一次性读入内存。</p>
-        <h4>执行逻辑</h4>
-        <p>先确定当前地图规格，再加载英雄图标、Boss 图标、问号房图标、精英房图标等。<code>last_direction</code> 用来记住上一次路线方向，后面选门时会避免掉头。</p>
-        <h4>它是干什么的</h4>
-        <p>它相当于给导航器装上“识别字典”。</p>
+    self.last_direction: Optional[str] = None</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把小地图导航器准备好，并把所有图标模板一次性读入内存。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先确定当前地图规格，再加载英雄图标、Boss 图标、问号房图标、精英房图标等。<code>last_direction</code>
+            用来记住上一次路线方向，后面选门时会避免掉头。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它相当于给导航器装上“识别字典”。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 4：换算小地图裁剪区域</div>
-      <div class="code-head">函数 <code>_scaled_crop_rect()</code> 与 <code>extract_minimap()</code></div>
-      <pre>def _scaled_crop_rect(self, frame: np.ndarray) -&gt; Rect:
+      <div class="segment">
+        <div class="segment-title">片段 4：换算小地图裁剪区域</div>
+        <div class="code-head">函数 <code>_scaled_crop_rect()</code> 与 <code>extract_minimap()</code></div>
+        <pre>
+def _scaled_crop_rect(self, frame: np.ndarray) -&gt; Rect:
     frame_h, frame_w = frame.shape[:2]
     x1, y1, x2, y2 = self.spec.crop_rect_1067
     scale_x = frame_w / 1067.0
@@ -950,21 +1065,25 @@ MAP_SPECS = {
 
 def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
     x1, y1, x2, y2 = self._scaled_crop_rect(frame)
-    return frame[y1:y2, x1:x2]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把整张截图中的小地图裁出来，同时对不同分辨率做比例适配。</p>
-        <h4>执行逻辑</h4>
-        <p>地图配置里的裁剪矩形是按基准分辨率写死的，这里会按当前截图尺寸进行缩放换算，保证不同窗口大小下都能裁到正确的小地图区域。</p>
-        <h4>它是干什么的</h4>
-        <p>这是小地图识别的第一步，没有正确裁图，模板匹配全部都会偏掉。</p>
+    return frame[y1:y2, x1:x2]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把整张截图中的小地图裁出来，同时对不同分辨率做比例适配。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            地图配置里的裁剪矩形是按基准分辨率写死的，这里会按当前截图尺寸进行缩放换算，保证不同窗口大小下都能裁到正确的小地图区域。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是小地图识别的第一步，没有正确裁图，模板匹配全部都会偏掉。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 5：模板匹配核心</div>
-      <div class="code-head">函数 <code>_match_template()</code> 与 <code>_match_template_debug()</code></div>
-      <pre>def _match_template(self, image: np.ndarray, template: np.ndarray, threshold: Optional[float] = None):
+      <div class="segment">
+        <div class="segment-title">片段 5：模板匹配核心</div>
+        <div class="code-head">函数 <code>_match_template()</code> 与 <code>_match_template_debug()</code></div>
+        <pre>
+def _match_template(self, image: np.ndarray, template: np.ndarray, threshold: Optional[float] = None):
     threshold = self.threshold if threshold is None else threshold
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
@@ -974,21 +1093,25 @@ def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
     h, w = template_gray.shape[:2]
     for y, x in zip(ys, xs):
         matches.append((x + w / 2.0, y + h / 2.0))
-    return matches</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这是小地图识别的核心：拿一张模板图，在小地图上滑动比较，看哪里最像它。</p>
-        <h4>执行逻辑</h4>
-        <p>先转灰度，再用 <code>cv2.matchTemplate()</code> 做相关性匹配，最后把所有超过阈值的位置换算成模板中心点。</p>
-        <h4>它是干什么的</h4>
-        <p>这是导航器的“视觉识别引擎”，专门认小地图上的房间图标。</p>
+    return matches</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这是小地图识别的核心：拿一张模板图，在小地图上滑动比较，看哪里最像它。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先转灰度，再用 <code>cv2.matchTemplate()</code> 做相关性匹配，最后把所有超过阈值的位置换算成模板中心点。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是导航器的“视觉识别引擎”，专门认小地图上的房间图标。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 6：像素位置换成房间坐标</div>
-      <div class="code-head">函数 <code>compute_room_id()</code></div>
-      <pre>def compute_room_id(self, x: float, y: float, minimap_image: np.ndarray) -&gt; Point:
+      <div class="segment">
+        <div class="segment-title">片段 6：像素位置换成房间坐标</div>
+        <div class="code-head">函数 <code>compute_room_id()</code></div>
+        <pre>
+def compute_room_id(self, x: float, y: float, minimap_image: np.ndarray) -&gt; Point:
     height, width = minimap_image.shape[:2]
     cell_w = width / self.spec.cols
     cell_h = height / self.spec.rows
@@ -996,21 +1119,23 @@ def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
     col = int(x // cell_w)
     row = max(0, min(self.spec.rows - 1, row))
     col = max(0, min(self.spec.cols - 1, col))
-    return row, col</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把图标中心的像素坐标转换成房间网格坐标。</p>
-        <h4>执行逻辑</h4>
-        <p>根据小地图总宽高和行列数，先算每个房间格子的尺寸，再用整除运算得出图标落在哪一行哪一列。</p>
-        <h4>它是干什么的</h4>
-        <p>A 星不吃像素坐标，只吃房间坐标，所以必须做这一步转换。</p>
+    return row, col</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把图标中心的像素坐标转换成房间网格坐标。</p>
+          <h4>执行逻辑</h4>
+          <p>根据小地图总宽高和行列数，先算每个房间格子的尺寸，再用整除运算得出图标落在哪一行哪一列。</p>
+          <h4>它是干什么的</h4>
+          <p>A 星不吃像素坐标，只吃房间坐标，所以必须做这一步转换。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 7：识别当前房间、Boss 房、问号房等</div>
-      <div class="code-head">函数 <code>detect_room_markers()</code></div>
-      <pre>def detect_room_markers(self, frame: np.ndarray) -&gt; Dict[str, Optional[Point]]:
+      <div class="segment">
+        <div class="segment-title">片段 7：识别当前房间、Boss 房、问号房等</div>
+        <div class="code-head">函数 <code>detect_room_markers()</code></div>
+        <pre>
+def detect_room_markers(self, frame: np.ndarray) -&gt; Dict[str, Optional[Point]]:
     minimap = self.extract_minimap(frame)
     current_room = None
     boss_room = None
@@ -1036,21 +1161,26 @@ def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
     if not query_matches:
         query_matches = self._match_template(minimap, self.templates["query5"])
     if query_matches:
-        query_room = self.compute_room_id(*query_matches[0], minimap)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把小地图上最重要的房间标记都识别出来。</p>
-        <h4>执行逻辑</h4>
-        <p>英雄图标对应当前房间，Boss 图标对应 Boss 房。问号房比较特殊，代码准备了多个不同样式模板，匹配到任意一个就算找到。</p>
-        <h4>它是干什么的</h4>
-        <p>它在告诉程序：我现在在哪，值得去的房间又在哪。</p>
+        query_room = self.compute_room_id(*query_matches[0], minimap)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把小地图上最重要的房间标记都识别出来。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            英雄图标对应当前房间，Boss 图标对应 Boss
+            房。问号房比较特殊，代码准备了多个不同样式模板，匹配到任意一个就算找到。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它在告诉程序：我现在在哪，值得去的房间又在哪。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 8：选择目标房间</div>
-      <div class="code-head">函数 <code>_pick_target_room()</code></div>
-      <pre>def _pick_target_room(
+      <div class="segment">
+        <div class="segment-title">片段 8：选择目标房间</div>
+        <div class="code-head">函数 <code>_pick_target_room()</code></div>
+        <pre>
+def _pick_target_room(
     self,
     current_room,
     query_room,
@@ -1071,21 +1201,26 @@ def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
         if current_room is not None and room == current_room:
             continue
         return room
-    return None</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>从多个候选房间中选出当前最值得前往的目标房。</p>
-        <h4>执行逻辑</h4>
-        <p>当前默认会优先走问号房、下层房、精英房，最后才是 Boss 房。找到第一个有效且不是当前房间的目标，就直接作为终点。</p>
-        <h4>它是干什么的</h4>
-        <p>这一步是在决定“A 星应该从哪算到哪”。</p>
+    return None</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>从多个候选房间中选出当前最值得前往的目标房。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            当前默认会优先走问号房、下层房、精英房，最后才是 Boss
+            房。找到第一个有效且不是当前房间的目标，就直接作为终点。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这一步是在决定“A 星应该从哪算到哪”。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 9：生成完整路线快照</div>
-      <div class="code-head">函数 <code>build_route_snapshot()</code></div>
-      <pre>def build_route_snapshot(self, frame_bgr, detection_objects, prefer_special_room=True) -&gt; RouteSnapshot:
+      <div class="segment">
+        <div class="segment-title">片段 9：生成完整路线快照</div>
+        <div class="code-head">函数 <code>build_route_snapshot()</code></div>
+        <pre>
+def build_route_snapshot(self, frame_bgr, detection_objects, prefer_special_room=True) -&gt; RouteSnapshot:
     room_info = self.detect_room_markers(frame_bgr)
     current_room = room_info["current_room"]
     boss_room = room_info["boss_room"]
@@ -1104,21 +1239,25 @@ def extract_minimap(self, frame: np.ndarray) -&gt; np.ndarray:
 
     next_room_direction = None
     if current_room is not None and target_room is not None:
-        next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority="right")</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这段代码把小地图识别结果和 A 星真正接起来，得出“下一步往哪间房走”。</p>
-        <h4>执行逻辑</h4>
-        <p>先识别房间，再选目标房，再把当前房间和目标房丢给 <code>next_direction()</code>，从而得到上、下、左、右之一。</p>
-        <h4>它是干什么的</h4>
-        <p>这是小地图视觉信息变成路线方向的关键结合点。</p>
+        next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority="right")</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这段代码把小地图识别结果和 A 星真正接起来，得出“下一步往哪间房走”。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先识别房间，再选目标房，再把当前房间和目标房丢给 <code>next_direction()</code>，从而得到上、下、左、右之一。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是小地图视觉信息变成路线方向的关键结合点。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 10：把方向继续关联到门</div>
-      <div class="code-head">函数 <code>build_route_snapshot()</code> 后半段</div>
-      <pre>selected_door_center = None
+      <div class="segment">
+        <div class="segment-title">片段 10：把方向继续关联到门</div>
+        <div class="code-head">函数 <code>build_route_snapshot()</code> 后半段</div>
+        <pre>
+selected_door_center = None
 if next_room_direction:
     player_center = None
     for item in detection_objects:
@@ -1135,27 +1274,29 @@ if next_room_direction:
         )
         if selected_door is not None:
             selected_door_center = selected_door.center
-            self.last_direction = next_room_direction</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>在已经知道房间方向以后，进一步尝试在当前画面里选出一扇具体门。</p>
-        <h4>执行逻辑</h4>
-        <p>程序先找玩家中心，再把所有门整理成门候选列表，然后调用前面讲过的门评分算法，选出最像目标方向的那扇门。</p>
-        <h4>它是干什么的</h4>
-        <p>这说明 A 星不是孤立存在的。它会继续影响当前房间的门选择。</p>
+            self.last_direction = next_room_direction</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>在已经知道房间方向以后，进一步尝试在当前画面里选出一扇具体门。</p>
+          <h4>执行逻辑</h4>
+          <p>程序先找玩家中心，再把所有门整理成门候选列表，然后调用前面讲过的门评分算法，选出最像目标方向的那扇门。</p>
+          <h4>它是干什么的</h4>
+          <p>这说明 A 星不是孤立存在的。它会继续影响当前房间的门选择。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第六章：<code>game.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      这是刷图动作控制中心。决定这一帧究竟该打怪、拾取、过门，还是执行卡住恢复。
-    </div>
+      <h2>第六章：<code>game.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        这是刷图动作控制中心。决定这一帧究竟该打怪、拾取、过门，还是执行卡住恢复。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：类级状态与初始化阈值</div>
-      <div class="code-head">类 <code>Game</code> 开头</div>
-      <pre>class Game:
+      <div class="segment">
+        <div class="segment-title">片段 1：类级状态与初始化阈值</div>
+        <div class="code-head">类 <code>Game</code> 开头</div>
+        <pre>
+class Game:
     _action_cache: Optional[str] = None
     _player: Optional[BoxDict] = None
     _pre_player: Optional[BoxDict] = None
@@ -1183,21 +1324,23 @@ if next_room_direction:
         self._attack_y = 100
         self._move_x = 20
         self._move_y = 20
-        self._direction = direction</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>这里定义了动作系统跨帧记忆的所有状态，以及攻击范围、拾取范围这些重要阈值。</p>
-        <h4>执行逻辑</h4>
-        <p>像上一帧动作、最近几帧位置、卡住计数、入房时间等都保存在类变量里，因为它们需要在多帧之间连续存在。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作系统的“记忆仓库”。自动化不是一帧就结束，所以一定要有跨帧状态。</p>
+        self._direction = direction</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>这里定义了动作系统跨帧记忆的所有状态，以及攻击范围、拾取范围这些重要阈值。</p>
+          <h4>执行逻辑</h4>
+          <p>像上一帧动作、最近几帧位置、卡住计数、入房时间等都保存在类变量里，因为它们需要在多帧之间连续存在。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作系统的“记忆仓库”。自动化不是一帧就结束，所以一定要有跨帧状态。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：读取方向提示和检测对象</div>
-      <div class="code-head">三个基础工具函数</div>
-      <pre>def _current_door_direction(self) -&gt; Optional[str]:
+      <div class="segment">
+        <div class="segment-title">片段 2：读取方向提示和检测对象</div>
+        <div class="code-head">三个基础工具函数</div>
+        <pre>
+def _current_door_direction(self) -&gt; Optional[str]:
     if isinstance(self._direction, (list, tuple)):
         if not self._direction:
             return None
@@ -1219,21 +1362,26 @@ def _get_clss(self, cls_name: str) -&gt; List[BoxDict]:
     for item in self._obj:
         if cls_name in item:
             result.append(item[cls_name])
-    return result</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>统一读取当前路线方向，以及从检测结果里取出某一类目标。</p>
-        <h4>执行逻辑</h4>
-        <p><code>_get_cls()</code> 取一个，<code>_get_clss()</code> 取一类全部对象。方向可以是单字符串，也可以是多步方向列表。</p>
-        <h4>它是干什么的</h4>
-        <p>它们是后续所有动作判断最常用的读数接口。</p>
+    return result</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>统一读取当前路线方向，以及从检测结果里取出某一类目标。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            <code>_get_cls()</code> 取一个，<code>_get_clss()</code>
+            取一类全部对象。方向可以是单字符串，也可以是多步方向列表。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>它们是后续所有动作判断最常用的读数接口。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 3：释放按键和距离函数</div>
-      <div class="code-head">基础动作工具</div>
-      <pre>def _release_direction_keys(self) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 3：释放按键和距离函数</div>
+        <div class="code-head">基础动作工具</div>
+        <pre>
+def _release_direction_keys(self) -&gt; None:
     for key in ("up", "down", "left", "right"):
         pydirectinput.keyUp(key)
 
@@ -1247,21 +1395,23 @@ def _release_cached_action(self) -&gt; None:
     Game._action_cache = None
 
 def _distance(self, a, b) -&gt; float:
-    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>一组很基础但很关键的工具：松开方向键、松开缓存动作、计算两点距离。</p>
-        <h4>执行逻辑</h4>
-        <p>自动化最怕按键黏住，所以每次改变动作前都要有可靠的释放逻辑。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作控制层的安全基础。</p>
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>一组很基础但很关键的工具：松开方向键、松开缓存动作、计算两点距离。</p>
+          <h4>执行逻辑</h4>
+          <p>自动化最怕按键黏住，所以每次改变动作前都要有可靠的释放逻辑。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作控制层的安全基础。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 4：推断入房方向与更新入口点</div>
-      <div class="code-head">房间入口保护逻辑</div>
-      <pre>def _infer_flow_direction_from_spawn(self, player_center):
+      <div class="segment">
+        <div class="segment-title">片段 4：推断入房方向与更新入口点</div>
+        <div class="code-head">房间入口保护逻辑</div>
+        <pre>
+def _infer_flow_direction_from_spawn(self, player_center):
     x, y = player_center
     edge_scores = {
         "LEFT": x,
@@ -1278,21 +1428,26 @@ def _distance(self, a, b) -&gt; float:
     }
     if edge_scores[nearest_edge] &gt; min(self._width, self._height) * 0.28:
         return None
-    return opposite[nearest_edge]</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>根据角色刚进房时靠近哪个边缘，推断他是从哪个门进来的，并反推出推进方向。</p>
-        <h4>执行逻辑</h4>
-        <p>如果角色靠近左边缘，就认为是从左边进来，接下来通常应往右推进。阈值 <code>0.28</code> 是为了防止角色没靠边时胡乱推断。</p>
-        <h4>它是干什么的</h4>
-        <p>这是后面“防止刚进房就回头”这件事的依据。</p>
+    return opposite[nearest_edge]</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>根据角色刚进房时靠近哪个边缘，推断他是从哪个门进来的，并反推出推进方向。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            如果角色靠近左边缘，就认为是从左边进来，接下来通常应往右推进。阈值
+            <code>0.28</code> 是为了防止角色没靠边时胡乱推断。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是后面“防止刚进房就回头”这件事的依据。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 5：过滤回头门</div>
-      <div class="code-head">入口保护函数</div>
-      <pre>def _filter_backtrack_doors(self, doors, direction_hint):
+      <div class="segment">
+        <div class="segment-title">片段 5：过滤回头门</div>
+        <div class="code-head">入口保护函数</div>
+        <pre>
+def _filter_backtrack_doors(self, doors, direction_hint):
     if not doors:
         return []
     if not Game._room_entry_position:
@@ -1302,21 +1457,23 @@ def _distance(self, a, b) -&gt; float:
     if not protect_entry:
         return list(doors)
     ...
-    return filtered</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>进房后的前几秒内，过滤掉太像“回头门”的门。</p>
-        <h4>执行逻辑</h4>
-        <p>如果门离入口太近，而且它又位于明显的回头方向，程序就会忽略它。这样可以显著减少来回穿门的抖动。</p>
-        <h4>它是干什么的</h4>
-        <p>这是刷图稳定性的关键保护逻辑之一。</p>
+    return filtered</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>进房后的前几秒内，过滤掉太像“回头门”的门。</p>
+          <h4>执行逻辑</h4>
+          <p>如果门离入口太近，而且它又位于明显的回头方向，程序就会忽略它。这样可以显著减少来回穿门的抖动。</p>
+          <h4>它是干什么的</h4>
+          <p>这是刷图稳定性的关键保护逻辑之一。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 6：短按键、轻点方向和方向取反</div>
-      <div class="code-head">动作底层函数</div>
-      <pre>def _key_press(self, key: str) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 6：短按键、轻点方向和方向取反</div>
+        <div class="code-head">动作底层函数</div>
+        <pre>
+def _key_press(self, key: str) -&gt; None:
     pydirectinput.keyDown(key)
     time.sleep(0.08)
     pydirectinput.keyUp(key)
@@ -1328,21 +1485,23 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
     time.sleep(duration)
     for action in direction.strip().split("_"):
         pydirectinput.keyUp(action.lower())
-    time.sleep(0.04)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>封装基础输入动作：短按一个键，或者轻点一个方向。</p>
-        <h4>执行逻辑</h4>
-        <p>攻击和拾取都用短按，卡住恢复和试探移动则经常用轻点方向。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作层把高层意图变成真实键盘事件的底层执行器。</p>
+    time.sleep(0.04)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>封装基础输入动作：短按一个键，或者轻点一个方向。</p>
+          <h4>执行逻辑</h4>
+          <p>攻击和拾取都用短按，卡住恢复和试探移动则经常用轻点方向。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作层把高层意图变成真实键盘事件的底层执行器。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 7：选最近目标</div>
-      <div class="code-head">函数 <code>_get_nearest()</code></div>
-      <pre>def _get_nearest(self, cls_objs, direct=None):
+      <div class="segment">
+        <div class="segment-title">片段 7：选最近目标</div>
+        <div class="code-head">函数 <code>_get_nearest()</code></div>
+        <pre>
+def _get_nearest(self, cls_objs, direct=None):
     nearest = None
     min_distance = float("inf")
     ...
@@ -1353,41 +1512,45 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
             "xywh": [obj_x, obj_y, xywh[2], xywh[3]],
             "conf": item.get("conf", 0),
         }
-    return nearest</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>在一堆同类目标里，比如一堆怪、一堆门、一堆金币中，选离玩家最近的那个。</p>
-        <h4>执行逻辑</h4>
-        <p>程序会先把每个目标框转换成中心点，再按欧氏距离比较。如果传了方向限制，就只在某个方向上筛选。</p>
-        <h4>它是干什么的</h4>
-        <p>打怪、拾取和过门都大量依赖这个函数。</p>
+    return nearest</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>在一堆同类目标里，比如一堆怪、一堆门、一堆金币中，选离玩家最近的那个。</p>
+          <h4>执行逻辑</h4>
+          <p>程序会先把每个目标框转换成中心点，再按欧氏距离比较。如果传了方向限制，就只在某个方向上筛选。</p>
+          <h4>它是干什么的</h4>
+          <p>打怪、拾取和过门都大量依赖这个函数。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 8：把目标位置翻成方向字符串</div>
-      <div class="code-head">函数 <code>_get_direction()</code></div>
-      <pre>def _get_direction(self, obj_box):
+      <div class="segment">
+        <div class="segment-title">片段 8：把目标位置翻成方向字符串</div>
+        <div class="code-head">函数 <code>_get_direction()</code></div>
+        <pre>
+def _get_direction(self, obj_box):
     if not self._player_xywh:
         return None
     dx = obj_box[0] - self._player_xywh[0]
     dy = obj_box[1] - self._player_xywh[1]
     ...
-    return "RIGHT_UP" / "LEFT" / "DOWN" ...</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把“目标在玩家哪边”翻译成程序能执行的方向字符串，比如 <code>LEFT</code>、<code>RIGHT_DOWN</code>。</p>
-        <h4>执行逻辑</h4>
-        <p>它会比较横纵偏移的大小，并结合一个小容差阈值，决定目标是更像纯上下左右，还是更像斜方向。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作层的方向翻译器。后面的靠近怪、靠近门、靠近物品都要先经过这一步。</p>
+    return "RIGHT_UP" / "LEFT" / "DOWN" ...</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把“目标在玩家哪边”翻译成程序能执行的方向字符串，比如 <code>LEFT</code>、<code>RIGHT_DOWN</code>。</p>
+          <h4>执行逻辑</h4>
+          <p>它会比较横纵偏移的大小，并结合一个小容差阈值，决定目标是更像纯上下左右，还是更像斜方向。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作层的方向翻译器。后面的靠近怪、靠近门、靠近物品都要先经过这一步。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 9：真正的移动执行函数</div>
-      <div class="code-head">函数 <code>_move()</code></div>
-      <pre>def _move(self, direction, is_slow=False, _action_cache=None, press_time=0.1, release_time=0.1) -&gt; str:
+      <div class="segment">
+        <div class="segment-title">片段 9：真正的移动执行函数</div>
+        <div class="code-head">函数 <code>_move()</code></div>
+        <pre>
+def _move(self, direction, is_slow=False, _action_cache=None, press_time=0.1, release_time=0.1) -&gt; str:
     if _action_cache and direction != _action_cache:
         for action in _action_cache.strip().split("_"):
             pydirectinput.keyUp(action.lower())
@@ -1403,21 +1566,23 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
         for action in direction.strip().split("_"):
             pydirectinput.keyDown(action.lower())
 
-    return direction</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把方向字符串真正变成按键动作。它是所有移动行为最后都会落到的函数。</p>
-        <h4>执行逻辑</h4>
-        <p>如果方向变了，就先松开旧方向，再按下新方向。普通移动带一点节奏控制，慢速移动则更平稳。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作层的总马达。</p>
+    return direction</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把方向字符串真正变成按键动作。它是所有移动行为最后都会落到的函数。</p>
+          <h4>执行逻辑</h4>
+          <p>如果方向变了，就先松开旧方向，再按下新方向。普通移动带一点节奏控制，慢速移动则更平稳。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作层的总马达。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 10：判断是否卡住</div>
-      <div class="code-head">函数 <code>_update_motion_state()</code></div>
-      <pre>def _update_motion_state(self, expect_motion: bool, player_visible: bool) -&gt; bool:
+      <div class="segment">
+        <div class="segment-title">片段 10：判断是否卡住</div>
+        <div class="code-head">函数 <code>_update_motion_state()</code></div>
+        <pre>
+def _update_motion_state(self, expect_motion: bool, player_visible: bool) -&gt; bool:
     if not self._player_xywh:
         return False
     if not expect_motion or not player_visible:
@@ -1429,21 +1594,25 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
         Game._stuck_count += 1
     else:
         Game._stuck_count = 0
-    return Game._stuck_count &gt;= 2</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>用最近几帧的位置历史来判断角色是不是卡住了。</p>
-        <h4>执行逻辑</h4>
-        <p>如果程序明明在移动，但最近几帧的横向和纵向扩散都很小，就增加卡住计数。连续两次满足这个条件，就认为真的卡住。</p>
-        <h4>它是干什么的</h4>
-        <p>这是一个典型的基于位置扩散范围的容差判定法。</p>
+    return Game._stuck_count &gt;= 2</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>用最近几帧的位置历史来判断角色是不是卡住了。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            如果程序明明在移动，但最近几帧的横向和纵向扩散都很小，就增加卡住计数。连续两次满足这个条件，就认为真的卡住。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是一个典型的基于位置扩散范围的容差判定法。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 11：卡住恢复</div>
-      <div class="code-head">函数 <code>_recover_from_stuck()</code></div>
-      <pre>def _recover_from_stuck(self, reason: str) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 11：卡住恢复</div>
+        <div class="code-head">函数 <code>_recover_from_stuck()</code></div>
+        <pre>
+def _recover_from_stuck(self, reason: str) -&gt; None:
     now = time.time()
     if now - Game._last_recover_time &lt; 1.2:
         return
@@ -1461,21 +1630,25 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
             self._tap_direction(step, 0.1)
     else:
         self._tap_direction(reverse_hint, 0.22)
-        self._tap_direction(current_hint if isinstance(current_hint, str) else "RIGHT", 0.1)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>一旦判断卡住，程序就会启动一套脱困动作模式。</p>
-        <h4>执行逻辑</h4>
-        <p>它不是永远只做一件事，而是四种模式轮流试：反向后下、反向后上、小矩形绕步、反向再顺向。这样可以提高从卡点里脱出来的概率。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作层的自救系统。</p>
+        self._tap_direction(current_hint if isinstance(current_hint, str) else "RIGHT", 0.1)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>一旦判断卡住，程序就会启动一套脱困动作模式。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            它不是永远只做一件事，而是四种模式轮流试：反向后下、反向后上、小矩形绕步、反向再顺向。这样可以提高从卡点里脱出来的概率。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是动作层的自救系统。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 12：打怪</div>
-      <div class="code-head">函数 <code>_kill_monster()</code></div>
-      <pre>def _kill_monster(self, obj_box) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 12：打怪</div>
+        <div class="code-head">函数 <code>_kill_monster()</code></div>
+        <pre>
+def _kill_monster(self, obj_box) -&gt; None:
     if not self._player_xywh:
         return
 
@@ -1490,21 +1663,23 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
 
     direction = self._get_direction(obj_box)
     if direction:
-        Game._action_cache = self._move(direction, is_slow=True, _action_cache=Game._action_cache)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>处理“去打这个怪”这件事。近了就打，远了就靠近。</p>
-        <h4>执行逻辑</h4>
-        <p>怪物进入攻击范围后，程序会先面向怪，再按 <code>x</code> 攻击。没进入攻击范围时，就慢慢朝怪方向走过去。</p>
-        <h4>它是干什么的</h4>
-        <p>当前这套战斗逻辑不复杂，就是非常直接的基础打怪模型。</p>
+        Game._action_cache = self._move(direction, is_slow=True, _action_cache=Game._action_cache)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>处理“去打这个怪”这件事。近了就打，远了就靠近。</p>
+          <h4>执行逻辑</h4>
+          <p>怪物进入攻击范围后，程序会先面向怪，再按 <code>x</code> 攻击。没进入攻击范围时，就慢慢朝怪方向走过去。</p>
+          <h4>它是干什么的</h4>
+          <p>当前这套战斗逻辑不复杂，就是非常直接的基础打怪模型。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 13：拾取与朝门移动</div>
-      <div class="code-head">函数 <code>_pick_up()</code> 与 <code>_move_to_door()</code></div>
-      <pre>def _pick_up(self, obj_box) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 13：拾取与朝门移动</div>
+        <div class="code-head">函数 <code>_pick_up()</code> 与 <code>_move_to_door()</code></div>
+        <pre>
+def _pick_up(self, obj_box) -&gt; None:
     if not self._player_xywh:
         return
     if abs(obj_box[0] - self._player_xywh[0]) &lt; self._move_x and abs(obj_box[1] - self._player_xywh[1]) &lt; self._move_y:
@@ -1518,21 +1693,23 @@ def _tap_direction(self, direction: str, duration: float = 0.12) -&gt; None:
 def _move_to_door(self, obj_box) -&gt; None:
     direction = self._get_direction(obj_box)
     if direction:
-        Game._action_cache = self._move(direction, _action_cache=Game._action_cache)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>一个负责捡东西，一个负责朝门靠近。</p>
-        <h4>执行逻辑</h4>
-        <p>物品进入拾取范围就按 <code>f</code>，否则先靠近。门则不需要交互键，只要朝门移动即可。</p>
-        <h4>它是干什么的</h4>
-        <p>这两段说明动作层其实一直在重复同一套模式：判断是否足够近，近则交互，不近则移动接近。</p>
+        Game._action_cache = self._move(direction, _action_cache=Game._action_cache)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>一个负责捡东西，一个负责朝门靠近。</p>
+          <h4>执行逻辑</h4>
+          <p>物品进入拾取范围就按 <code>f</code>，否则先靠近。门则不需要交互键，只要朝门移动即可。</p>
+          <h4>它是干什么的</h4>
+          <p>这两段说明动作层其实一直在重复同一套模式：判断是否足够近，近则交互，不近则移动接近。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 14：后备路线搜索与向上扫门</div>
-      <div class="code-head">函数 <code>_fallback_up_search_move()</code> 与 <code>_fallback_route_move()</code></div>
-      <pre>def _fallback_up_search_move(self) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 14：后备路线搜索与向上扫门</div>
+        <div class="code-head">函数 <code>_fallback_up_search_move()</code> 与 <code>_fallback_route_move()</code></div>
+        <pre>
+def _fallback_up_search_move(self) -&gt; None:
     ...
     if phase == 0:
         command = "DOWN"
@@ -1552,21 +1729,25 @@ def _fallback_route_move(self, direction: str) -&gt; None:
         self._fallback_up_search_move()
         return
     ...
-    Game._action_cache = self._move(normalized, is_slow=True, _action_cache=Game._action_cache)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>当当前帧没有明确目标，但路线提示还存在时，程序不会完全停住，而是执行一个受控的后备移动策略。</p>
-        <h4>执行逻辑</h4>
-        <p>向上方向最特殊，因为很多副本的上门不好对准，所以会先做一个分阶段扫门动作。向下则会根据角色当前横向位置微调成左下或右下。</p>
-        <h4>它是干什么的</h4>
-        <p>这是“看不清门时也尽量沿正确大方向探索”的启发式策略。</p>
+    Game._action_cache = self._move(normalized, is_slow=True, _action_cache=Game._action_cache)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>当当前帧没有明确目标，但路线提示还存在时，程序不会完全停住，而是执行一个受控的后备移动策略。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            向上方向最特殊，因为很多副本的上门不好对准，所以会先做一个分阶段扫门动作。向下则会根据角色当前横向位置微调成左下或右下。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是“看不清门时也尽量沿正确大方向探索”的启发式策略。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 15：主决策入口开头</div>
-      <div class="code-head">函数 <code>run()</code> 前半段</div>
-      <pre>def run(self) -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 15：主决策入口开头</div>
+        <div class="code-head">函数 <code>run()</code> 前半段</div>
+        <pre>
+def run(self) -&gt; None:
     raw_player = self._get_cls("player")
     if raw_player is None:
         Game._player_missing_count += 1
@@ -1581,21 +1762,25 @@ def _fallback_route_move(self, direction: str) -&gt; None:
         return
 
     if Game._player is None:
-        return</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>先确认这一帧能否定位到玩家。如果一时漏检，就临时沿用上一帧位置；如果连续很多帧都看不见玩家，就触发恢复。</p>
-        <h4>执行逻辑</h4>
-        <p>这样做可以减少 YOLO 偶发漏检造成的动作抖动。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作层进入决策前的定位校验步骤。</p>
+        return</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>
+            先确认这一帧能否定位到玩家。如果一时漏检，就临时沿用上一帧位置；如果连续很多帧都看不见玩家，就触发恢复。
+          </p>
+          <h4>执行逻辑</h4>
+          <p>这样做可以减少 YOLO 偶发漏检造成的动作抖动。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作层进入决策前的定位校验步骤。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 16：更新玩家中心和卡住检测</div>
-      <div class="code-head">函数 <code>run()</code> 中段</div>
-      <pre>self._player_xywh = list(Game._player["xywh"])
+      <div class="segment">
+        <div class="segment-title">片段 16：更新玩家中心和卡住检测</div>
+        <div class="code-head">函数 <code>run()</code> 中段</div>
+        <pre>
+self._player_xywh = list(Game._player["xywh"])
 self._player_xywh[0] = self._player_xywh[0] + self._player_xywh[2] / 2
 self._player_xywh[1] = self._player_xywh[1] + self._player_xywh[3] / 2
 logger.info("player center: {}", self._player_xywh[:2])
@@ -1606,21 +1791,23 @@ if self._update_motion_state(
     player_visible=raw_player is not None,
 ):
     self._recover_from_stuck("movement_stalled")
-    return</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把玩家框转换成中心点，更新入口状态，并立即检查是不是卡住。</p>
-        <h4>执行逻辑</h4>
-        <p>只要判断为卡住，就会立刻进入恢复流程，后面这帧不再继续战斗或过门判断。</p>
-        <h4>它是干什么的</h4>
-        <p>说明系统优先保证自己能动起来，再谈别的决策。</p>
+    return</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把玩家框转换成中心点，更新入口状态，并立即检查是不是卡住。</p>
+          <h4>执行逻辑</h4>
+          <p>只要判断为卡住，就会立刻进入恢复流程，后面这帧不再继续战斗或过门判断。</p>
+          <h4>它是干什么的</h4>
+          <p>说明系统优先保证自己能动起来，再谈别的决策。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 17：战斗优先级</div>
-      <div class="code-head">函数 <code>run()</code> 战斗部分</div>
-      <pre>boss = self._get_clss("boss")
+      <div class="segment">
+        <div class="segment-title">片段 17：战斗优先级</div>
+        <div class="code-head">函数 <code>run()</code> 战斗部分</div>
+        <pre>
+boss = self._get_clss("boss")
 if boss:
     nearest_boss = self._get_nearest(boss)
     if nearest_boss:
@@ -1632,21 +1819,23 @@ if monsters:
     nearest_monster = self._get_nearest(monsters)
     if nearest_monster:
         self._kill_monster(nearest_monster["xywh"])
-        return</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>定义战斗优先级：先 Boss，后普通怪。</p>
-        <h4>执行逻辑</h4>
-        <p>一旦某一类怪物处理成功，当前帧立即结束，不会继续去捡东西或过门。</p>
-        <h4>它是干什么的</h4>
-        <p>这说明动作层是“单帧只做最重要的一件事”的设计。</p>
+        return</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>定义战斗优先级：先 Boss，后普通怪。</p>
+          <h4>执行逻辑</h4>
+          <p>一旦某一类怪物处理成功，当前帧立即结束，不会继续去捡东西或过门。</p>
+          <h4>它是干什么的</h4>
+          <p>这说明动作层是“单帧只做最重要的一件事”的设计。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 18：拾取优先级</div>
-      <div class="code-head">函数 <code>run()</code> 拾取部分</div>
-      <pre>goods = self._get_clss("goods")
+      <div class="segment">
+        <div class="segment-title">片段 18：拾取优先级</div>
+        <div class="code-head">函数 <code>run()</code> 拾取部分</div>
+        <pre>
+goods = self._get_clss("goods")
 if goods:
     nearest_goods = self._get_nearest(goods)
     if nearest_goods:
@@ -1658,21 +1847,23 @@ if money:
     nearest_money = self._get_nearest(money)
     if nearest_money:
         self._pick_up(nearest_money["xywh"])
-        return</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>没有怪可打时，程序会开始优先拾取掉落物和金币。</p>
-        <h4>执行逻辑</h4>
-        <p>和战斗一样，只要选中了一个最近物品并开始执行拾取，当前帧就结束。</p>
-        <h4>它是干什么的</h4>
-        <p>这体现出刷图行为顺序：清怪优先于捡东西，捡东西优先于过门。</p>
+        return</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>没有怪可打时，程序会开始优先拾取掉落物和金币。</p>
+          <h4>执行逻辑</h4>
+          <p>和战斗一样，只要选中了一个最近物品并开始执行拾取，当前帧就结束。</p>
+          <h4>它是干什么的</h4>
+          <p>这体现出刷图行为顺序：清怪优先于捡东西，捡东西优先于过门。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 19：按路线方向选门并进门</div>
-      <div class="code-head">函数 <code>run()</code> 过门部分</div>
-      <pre>doors = self._get_clss("door")
+      <div class="segment">
+        <div class="segment-title">片段 19：按路线方向选门并进门</div>
+        <div class="code-head">函数 <code>run()</code> 过门部分</div>
+        <pre>
+doors = self._get_clss("door")
 if doors:
     direction_hint = self._current_door_direction()
     ...
@@ -1684,21 +1875,25 @@ if doors:
         nearest_door = self._get_nearest(usable_doors)
     if nearest_door:
         self._move_to_door(nearest_door["xywh"])
-        return</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>当前房间清完后，程序会按路线方向去筛门、找门、朝门移动。</p>
-        <h4>执行逻辑</h4>
-        <p>先拿方向提示，再过滤掉回头门，然后优先找该方向上的最近门。没有严格匹配门时，会触发后面的兜底逻辑，而不是贸然走错门。</p>
-        <h4>它是干什么的</h4>
-        <p>这是房间级路线真正落实到当前画面行为的关键桥梁。</p>
+        return</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>当前房间清完后，程序会按路线方向去筛门、找门、朝门移动。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            先拿方向提示，再过滤掉回头门，然后优先找该方向上的最近门。没有严格匹配门时，会触发后面的兜底逻辑，而不是贸然走错门。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>这是房间级路线真正落实到当前画面行为的关键桥梁。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 20：异常处理和最终兜底移动</div>
-      <div class="code-head">函数 <code>run()</code> 结尾</div>
-      <pre>except LookupError:
+      <div class="segment">
+        <div class="segment-title">片段 20：异常处理和最终兜底移动</div>
+        <div class="code-head">函数 <code>run()</code> 结尾</div>
+        <pre>
+except LookupError:
     pass
 except Exception as exc:
     logger.exception("game loop error: {}", exc)
@@ -1713,27 +1908,29 @@ if fallback_direction:
     self._fallback_route_move(fallback_direction)
     return
 
-self._release_cached_action()</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>当前面所有主要分支都没成功时，程序会尝试做一个安全的后备动作；如果连后备方向都没有，就停住。</p>
-        <h4>执行逻辑</h4>
-        <p>没有清晰目标时，程序不会硬闯，而是优先做可控的兜底移动，或者干脆释放按键等待下一帧。</p>
-        <h4>它是干什么的</h4>
-        <p>这是动作系统最后一道安全阀，防止“没想清楚就乱动”。</p>
+self._release_cached_action()</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>当前面所有主要分支都没成功时，程序会尝试做一个安全的后备动作；如果连后备方向都没有，就停住。</p>
+          <h4>执行逻辑</h4>
+          <p>没有清晰目标时，程序不会硬闯，而是优先做可控的兜底移动，或者干脆释放按键等待下一帧。</p>
+          <h4>它是干什么的</h4>
+          <p>这是动作系统最后一道安全阀，防止“没想清楚就乱动”。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>第七章：<code>minimap_route_demo.py</code></h2>
-    <div class="file-intro">
-      <strong>这个文件负责什么：</strong>
-      这是一个单独测试导航链路的脚本，不是主刷图入口。它用来验证“截图 + 检测 + 小地图导航”这一层是否正常。
-    </div>
+      <h2>第七章：<code>minimap_route_demo.py</code></h2>
+      <div class="file-intro">
+        <strong>这个文件负责什么：</strong>
+        这是一个单独测试导航链路的脚本，不是主刷图入口。它用来验证“截图 + 检测 + 小地图导航”这一层是否正常。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 1：初始化和截图测试</div>
-      <div class="code-head">文件主体</div>
-      <pre>def main() -&gt; None:
+      <div class="segment">
+        <div class="segment-title">片段 1：初始化和截图测试</div>
+        <div class="code-head">文件主体</div>
+        <pre>
+def main() -&gt; None:
     width = 1067
     height = 600
     detector = Detector("")
@@ -1744,21 +1941,23 @@ self._release_cached_action()</pre>
         img = pyautogui.screenshot(region=(0, 0, width, height))
         frame_rgb = np.array(img)
         annotated, objects = detector.detect(frame_rgb)
-        frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>用固定区域截图来快速测试检测和导航，不需要进入完整刷图主循环。</p>
-        <h4>执行逻辑</h4>
-        <p>初始化检测器和导航器后，循环截取屏幕指定区域，并把结果送进检测和导航模块。</p>
-        <h4>它是干什么的</h4>
-        <p>这是一个方便开发者调试导航链路的测试脚本。</p>
+        frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>用固定区域截图来快速测试检测和导航，不需要进入完整刷图主循环。</p>
+          <h4>执行逻辑</h4>
+          <p>初始化检测器和导航器后，循环截取屏幕指定区域，并把结果送进检测和导航模块。</p>
+          <h4>它是干什么的</h4>
+          <p>这是一个方便开发者调试导航链路的测试脚本。</p>
+        </div>
       </div>
-    </div>
 
-    <div class="segment">
-      <div class="segment-title">片段 2：打印导航结果并显示调试窗口</div>
-      <div class="code-head">文件后半段</div>
-      <pre>snapshot = navigator.build_route_snapshot(frame_bgr, objects or [])
+      <div class="segment">
+        <div class="segment-title">片段 2：打印导航结果并显示调试窗口</div>
+        <div class="code-head">文件后半段</div>
+        <pre>
+snapshot = navigator.build_route_snapshot(frame_bgr, objects or [])
 print(
     json.dumps(
         {
@@ -1772,43 +1971,52 @@ print(
         },
         ensure_ascii=False,
     )
-)</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>把导航结果打印成 JSON，同时显示大图检测结果和小地图窗口。</p>
-        <h4>执行逻辑</h4>
-        <p>这样开发者可以非常直观看到“导航层此刻认为自己在哪、目标房在哪、下一步往哪走”。</p>
-        <h4>它是干什么的</h4>
-        <p>这是一个专门验证导航是否准的体检工具。</p>
+)</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>把导航结果打印成 JSON，同时显示大图检测结果和小地图窗口。</p>
+          <h4>执行逻辑</h4>
+          <p>这样开发者可以非常直观看到“导航层此刻认为自己在哪、目标房在哪、下一步往哪走”。</p>
+          <h4>它是干什么的</h4>
+          <p>这是一个专门验证导航是否准的体检工具。</p>
+        </div>
       </div>
-    </div>
 
-    <h2>附录：为什么 <code>olaplug</code> 不放进主线逐段讲解</h2>
-    <div class="note">
-      <strong>不是遗漏，而是为了抓主线。</strong>
-      <code>olaplug</code> 目录主要是一个功能非常大的 DLL 封装层，里面有窗口绑定、输入、图色、OCR、YOLO、内存接口等大量通用函数。
-      但当前这套刷图主流程并没有真正实例化 <code>OLAPlugServer</code>，也没有调用 <code>BindWindow()</code>。
-    </div>
+      <h2>附录：为什么 <code>olaplug</code> 不放进主线逐段讲解</h2>
+      <div class="note">
+        <strong>不是遗漏，而是为了抓主线。</strong>
+        <code>olaplug</code> 目录主要是一个功能非常大的 DLL
+        封装层，里面有窗口绑定、输入、图色、OCR、YOLO、内存接口等大量通用函数。 但当前这套刷图主流程并没有真正实例化
+        <code>OLAPlugServer</code>，也没有调用 <code>BindWindow()</code>。
+      </div>
 
-    <div class="segment">
-      <div class="segment-title">当前真实执行链</div>
-      <div class="code-head">你现在最该记住的主线</div>
-      <pre>win32gui 找窗口
+      <div class="segment">
+        <div class="segment-title">当前真实执行链</div>
+        <div class="code-head">你现在最该记住的主线</div>
+        <pre>
+win32gui 找窗口
   -&gt; pyautogui 截图
   -&gt; detector.py 做 YOLO 检测
   -&gt; minimap_nav.py 做小地图识别并调用 A 星
-  -&gt; game.py 用 pydirectinput 发方向键 / 攻击键 / 拾取键</pre>
-      <div class="explain">
-        <h4>这一段的作用</h4>
-        <p>提醒你把精力优先放在当前真正运行的刷图主链上。</p>
-        <h4>执行逻辑</h4>
-        <p>如果你一开始就钻进 <code>olaplug</code>，很容易被大量通用接口淹没，反而看不清这套刷图代码现在到底是怎么工作的。</p>
-        <h4>它是干什么的</h4>
-        <p>帮助你聚焦真正的主线，而不是被备用工具箱带偏。</p>
+  -&gt; game.py 用 pydirectinput 发方向键 / 攻击键 / 拾取键</pre
+        >
+        <div class="explain">
+          <h4>这一段的作用</h4>
+          <p>提醒你把精力优先放在当前真正运行的刷图主链上。</p>
+          <h4>执行逻辑</h4>
+          <p>
+            如果你一开始就钻进
+            <code>olaplug</code>，很容易被大量通用接口淹没，反而看不清这套刷图代码现在到底是怎么工作的。
+          </p>
+          <h4>它是干什么的</h4>
+          <p>帮助你聚焦真正的主线，而不是被备用工具箱带偏。</p>
+        </div>
       </div>
-    </div>
 
-    <p class="small">文档基于当前工作区 <code>D:\yolo\yolo11\dnf</code> 源码重新整理，修复了旧版本中的乱码片段和空白过多问题。</p>
-  </div>
-</body>
+      <p class="small">
+        文档基于当前工作区 <code>D:\yolo\yolo11\dnf</code> 源码重新整理，修复了旧版本中的乱码片段和空白过多问题。
+      </p>
+    </div>
+  </body>
 </html>
