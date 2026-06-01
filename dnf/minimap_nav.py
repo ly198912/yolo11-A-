@@ -12,7 +12,7 @@ from loguru import logger
 
 from dnf.door_strategy import DoorCandidate, choose_best_door
 from dnf.map_specs import MAP_SPECS, MapSpec
-from dnf.minimap_astar import next_direction
+from dnf.minimap_astar import a_star, judge_direction
 
 
 Point = Tuple[int, int]
@@ -32,7 +32,7 @@ QUERY_TEMPLATE_FILES = {
 MARKER_THRESHOLDS = {
     "hero": 0.58,
     "boss": 0.68,
-    "query": 0.50,
+    "query": 0.62,
     "elite": 0.68,
     "special": 0.64,
     "down": 0.58,
@@ -41,6 +41,8 @@ MARKER_THRESHOLDS = {
 ROBUST_TEMPLATE_SCALES = (0.88, 0.94, 1.0, 1.06, 1.12)
 AUTO_MAP_SWITCH_MARGIN = 0.08
 QUERY_COLOR_FALLBACK_ENABLED = os.getenv("DNF_QUERY_COLOR_FALLBACK", "0") == "1"
+QUERY_CONFIRM_FRAMES = 10
+QUERY_MISS_TOLERANCE_FRAMES = 2
 
 
 @dataclass
@@ -117,6 +119,13 @@ class MiniMapNavigator:
         self._debug_scores_interval = 5
         self._last_room_rect: Optional[Rect] = None
         self._auto_scores_cache: Dict[str, float] = {}
+        self._pending_query_room: Optional[Point] = None
+        self._pending_query_marker: Optional[Tuple[float, float]] = None
+        self._pending_query_frames = 0
+        self._confirmed_query_room: Optional[Point] = None
+        self._confirmed_query_marker: Optional[Tuple[float, float]] = None
+        self._query_missing_frames = 0
+        self._last_player_center: Optional[Tuple[float, float]] = None
 
     def _set_active_map(self, map_name: str) -> None:
         self.map_name = map_name
@@ -363,6 +372,37 @@ class MiniMapNavigator:
                 return room, (x, y)
         return None, None
 
+    def _closest_query_room_and_center_from_matches(
+        self,
+        matches: Sequence[ScoredMatch],
+        minimap: np.ndarray,
+        current_room: Optional[Point],
+        excluded_rooms: Sequence[Optional[Point]] = (),
+        max_room_distance: int = 2,
+    ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+        if current_room is None:
+            return self._first_room_and_center_from_matches(matches, minimap, excluded_rooms)
+
+        excluded = {room for room in excluded_rooms if room is not None}
+        candidates = []
+        rejected_rooms = set()
+        for score, x, y, _ in matches:
+            room = self.compute_room_id(x, y, minimap)
+            if room in excluded:
+                continue
+            room_distance = abs(room[0] - current_room[0]) + abs(room[1] - current_room[1])
+            if room_distance > max_room_distance:
+                rejected_rooms.add(room)
+                continue
+            candidates.append((room_distance, -score, room, (x, y)))
+
+        if not candidates:
+            if rejected_rooms:
+                logger.info("ignore implausible query rooms: current={}, rejected={}", current_room, sorted(rejected_rooms))
+            return None, None
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return candidates[0][2], candidates[0][3]
+
     def _match_query_by_color(self, minimap: np.ndarray, current_room: Optional[Point]) -> List[ScoredMatch]:
         if current_room is None:
             return []
@@ -388,6 +428,53 @@ class MiniMapNavigator:
             matches.append((score, float(x), float(y), "query_color"))
         matches.sort(key=lambda item: item[0], reverse=True)
         return matches
+
+    def _stabilize_query_room(
+        self,
+        query_room: Optional[Point],
+        query_marker: Optional[Tuple[float, float]],
+    ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+        if query_room is None:
+            self._pending_query_room = None
+            self._pending_query_marker = None
+            self._pending_query_frames = 0
+        elif query_room == self._pending_query_room:
+            self._pending_query_frames += 1
+            self._pending_query_marker = query_marker
+        else:
+            self._pending_query_room = query_room
+            self._pending_query_marker = query_marker
+            self._pending_query_frames = 1
+
+        if query_room == self._confirmed_query_room:
+            self._query_missing_frames = 0
+            self._confirmed_query_marker = query_marker
+            return self._confirmed_query_room, self._confirmed_query_marker
+
+        if query_room is not None and self._pending_query_frames >= QUERY_CONFIRM_FRAMES:
+            logger.info("query marker confirmed after {} frames: {}", self._pending_query_frames, query_room)
+            self._confirmed_query_room = query_room
+            self._confirmed_query_marker = query_marker
+            self._query_missing_frames = 0
+            return self._confirmed_query_room, self._confirmed_query_marker
+
+        if self._confirmed_query_room is not None:
+            self._query_missing_frames += 1
+            if self._query_missing_frames <= QUERY_MISS_TOLERANCE_FRAMES:
+                return self._confirmed_query_room, self._confirmed_query_marker
+            logger.info("query marker expired after {} missing frames: {}", self._query_missing_frames, self._confirmed_query_room)
+            self._confirmed_query_room = None
+            self._confirmed_query_marker = None
+            self._query_missing_frames = 0
+
+        if query_room is not None:
+            logger.info(
+                "query marker pending confirmation: room={}, frames={}/{}",
+                query_room,
+                self._pending_query_frames,
+                QUERY_CONFIRM_FRAMES,
+            )
+        return None, None
 
     def compute_room_id(self, x: float, y: float, minimap_image: np.ndarray) -> Point:
         height, width = minimap_image.shape[:2]
@@ -436,6 +523,44 @@ class MiniMapNavigator:
             cv2.putText(minimap, label, (x + 5, y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
         return minimap
 
+    def draw_debug_overlay(self, frame: np.ndarray, source_frame: Optional[np.ndarray] = None) -> np.ndarray:
+        source = source_frame if source_frame is not None else frame
+        info = self.detect_room_markers(source)
+        output = frame.copy()
+        frame_h, frame_w = output.shape[:2]
+
+        crop_rect, room_rect = self._scaled_crop_and_room_rect(source)
+        x1, y1, x2, y2 = _clamp_rect(crop_rect, frame_w, frame_h)
+        if room_rect is None:
+            rx1, ry1, rx2, ry2 = x1, y1, x2, y2
+        else:
+            rx1, ry1, rx2, ry2 = _clamp_rect(room_rect, frame_w, frame_h)
+
+        cv2.rectangle(output, (rx1, ry1), (rx2 - 1, ry2 - 1), (255, 255, 255), 1)
+        for col in range(1, self.spec.cols):
+            x = int(round(rx1 + (rx2 - rx1) * col / self.spec.cols))
+            cv2.line(output, (x, ry1), (x, ry2 - 1), (180, 180, 180), 1)
+        for row in range(1, self.spec.rows):
+            y = int(round(ry1 + (ry2 - ry1) * row / self.spec.rows))
+            cv2.line(output, (rx1, y), (rx2 - 1, y), (180, 180, 180), 1)
+
+        marker_styles = {
+            "current_marker": ((255, 0, 0), "P"),
+            "boss_marker": ((0, 0, 255), "B"),
+            "query_marker": ((0, 255, 255), "Q"),
+            "elite_marker": ((255, 0, 255), "E"),
+            "down_marker": ((0, 255, 0), "D"),
+        }
+        for key, (color, label) in marker_styles.items():
+            marker = info.get(key)
+            if marker is None:
+                continue
+            x = int(round(x1 + marker[0]))
+            y = int(round(y1 + marker[1]))
+            cv2.circle(output, (x, y), 4, color, -1)
+            cv2.putText(output, label, (x + 5, y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
+        return output
+
     def detect_room_markers(self, frame: np.ndarray) -> Dict[str, Optional[Point]]:
         minimap = self.extract_minimap(frame)
         current_room = None
@@ -480,16 +605,18 @@ class MiniMapNavigator:
         query_names = [name for name in QUERY_TEMPLATE_FILES if name in self.templates]
         query_matches = self._match_marker(minimap, query_names, "query")
         if query_matches:
-            query_room, query_marker = self._first_room_and_center_from_matches(
+            query_room, query_marker = self._closest_query_room_and_center_from_matches(
                 query_matches,
                 minimap,
+                current_room=current_room,
                 excluded_rooms=(current_room, boss_room, elite_room, down_room),
             )
         if query_room is None and QUERY_COLOR_FALLBACK_ENABLED:
             query_color_matches = self._match_query_by_color(minimap, current_room)
-            query_room, query_marker = self._first_room_and_center_from_matches(
+            query_room, query_marker = self._closest_query_room_and_center_from_matches(
                 query_color_matches,
                 minimap,
+                current_room=current_room,
                 excluded_rooms=(current_room, boss_room, elite_room, down_room),
             )
 
@@ -534,6 +661,28 @@ class MiniMapNavigator:
             doors.append(DoorCandidate(bbox=xywh, center=center))
         return doors
 
+    @staticmethod
+    def _direction_to_screen_target(
+        player_center: Tuple[float, float],
+        target_center: Tuple[float, float],
+        dead_zone: float = 16.0,
+    ) -> Optional[str]:
+        dx = target_center[0] - player_center[0]
+        dy = target_center[1] - player_center[1]
+        horizontal = None
+        vertical = None
+        if dx > dead_zone:
+            horizontal = "right"
+        elif dx < -dead_zone:
+            horizontal = "left"
+        if dy > dead_zone:
+            vertical = "down"
+        elif dy < -dead_zone:
+            vertical = "up"
+        if horizontal and vertical:
+            return f"{horizontal}_{vertical}"
+        return horizontal or vertical
+
     def _pick_target_room(
         self,
         current_room: Optional[Point],
@@ -561,7 +710,12 @@ class MiniMapNavigator:
                 ("boss", boss_room),
             ])
         else:
-            candidates.append(("boss", boss_room))
+            candidates.extend([
+                ("query", query_room),
+                ("boss", boss_room),
+                ("down", down_room),
+                ("elite", elite_room),
+            ])
 
         for kind, room in candidates:
             if room is None:
@@ -570,6 +724,15 @@ class MiniMapNavigator:
                 continue
             return kind, room
         return None, None
+
+    @staticmethod
+    def _room_distance(first: Optional[Point], second: Optional[Point]) -> Optional[int]:
+        if first is None or second is None:
+            return None
+        return abs(first[0] - second[0]) + abs(first[1] - second[1])
+
+    def _is_adjacent_room(self, first: Optional[Point], second: Optional[Point]) -> bool:
+        return self._room_distance(first, second) == 1
 
     def _route_priority(self, current_room: Point, target_room: Point) -> str:
         row_delta = target_room[0] - current_room[0]
@@ -580,37 +743,22 @@ class MiniMapNavigator:
             return "down" if row_delta > 0 else "up"
         return "right"
 
-    def _marker_direction(self, current_marker: Tuple[float, float], target_marker: Tuple[float, float]) -> Optional[str]:
-        dx = target_marker[0] - current_marker[0]
-        dy = target_marker[1] - current_marker[1]
-        margin = 6.0
-        horizontal = None
-        vertical = None
-        if dx > margin:
-            horizontal = "right"
-        elif dx < -margin:
-            horizontal = "left"
-        if dy > margin:
-            vertical = "down"
-        elif dy < -margin:
-            vertical = "up"
-        if horizontal and vertical:
-            return f"{horizontal}_{vertical}"
-        return horizontal or vertical
-
     def build_route_snapshot(
         self,
         frame_bgr: np.ndarray,
         detection_objects: Sequence[dict],
-        prefer_special_room: bool = True,
+        prefer_special_room: bool = False,
     ) -> RouteSnapshot:
         room_info = self.detect_room_markers(frame_bgr)
         current_room = room_info["current_room"]
         boss_room = room_info["boss_room"]
-        query_room = room_info["query_room"]
+        query_room, query_marker = self._stabilize_query_room(
+            room_info["query_room"],
+            room_info["query_marker"],
+        )
+        room_info["query_marker"] = query_marker
         elite_room = room_info["elite_room"]
         down_room = room_info["down_room"]
-        current_marker = room_info.get("current_marker")
 
         target_kind, target_room = self._pick_target(
             current_room=current_room,
@@ -623,31 +771,63 @@ class MiniMapNavigator:
 
         next_room_direction = None
         if current_room is not None and target_room is not None:
-            target_marker = room_info.get(f"{target_kind}_marker") if target_kind else None
-            if current_marker is not None and target_marker is not None:
-                next_room_direction = self._marker_direction(current_marker, target_marker)
-            if next_room_direction is None:
-                route_priority = self._route_priority(current_room, target_room)
-                next_room_direction = next_direction(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+            route_priority = self._route_priority(current_room, target_room)
+            route_path = a_star(deepcopy(self.spec.room_grid), current_room, target_room, priority=route_priority)
+            if route_path and len(route_path) >= 2:
+                next_room_direction = judge_direction(route_path[0], route_path[1])
+            logger.info(
+                "A* path: start={}@{}, target={}@{} marker={}, priority={}, path={}, next={}",
+                current_room,
+                room_info.get("current_marker"),
+                target_kind,
+                target_room,
+                room_info.get(f"{target_kind}_marker") if target_kind else None,
+                route_priority,
+                route_path,
+                next_room_direction,
+            )
 
         selected_door_center = None
-        if next_room_direction:
-            player_center = None
-            for item in detection_objects:
-                if "player" in item:
-                    x, y, w, h = item["player"]["xywh"]
-                    player_center = (x + w / 2.0, y + h / 2.0)
-                    break
-            if player_center is not None:
-                selected_door = choose_best_door(
-                    self._door_candidates_from_objects(detection_objects),
-                    player_center=player_center,
-                    expected_direction=next_room_direction,
-                    last_direction=self.last_direction,
+        player_center = None
+        for item in detection_objects:
+            if "player" in item:
+                x, y, w, h = item["player"]["xywh"]
+                player_center = (x + w / 2.0, y + h / 2.0)
+                self._last_player_center = player_center
+                break
+        if player_center is None:
+            player_center = self._last_player_center
+
+        door_candidates = self._door_candidates_from_objects(detection_objects)
+        if next_room_direction and player_center is not None:
+            selected_door = choose_best_door(
+                door_candidates,
+                player_center=player_center,
+                expected_direction=next_room_direction,
+                last_direction=self.last_direction,
+            )
+            if selected_door is not None:
+                selected_door_center = selected_door.center
+                self.last_direction = next_room_direction
+        elif current_room is not None and current_room == boss_room and player_center is not None:
+            selected_door = choose_best_door(
+                door_candidates,
+                player_center=player_center,
+                expected_direction=None,
+                last_direction=self.last_direction,
+            )
+            if selected_door is not None:
+                next_room_direction = self._direction_to_screen_target(player_center, selected_door.center)
+                selected_door_center = selected_door.center
+                target_kind = "boss"
+                target_room = boss_room
+                self.last_direction = next_room_direction
+                logger.info(
+                    "boss marker shares current grid cell; use visible door: player={}, door={}, direction={}",
+                    player_center,
+                    selected_door.center,
+                    next_room_direction,
                 )
-                if selected_door is not None:
-                    selected_door_center = selected_door.center
-                    self.last_direction = next_room_direction
 
         debug_scores = self.get_debug_scores(frame_bgr)
         return RouteSnapshot(

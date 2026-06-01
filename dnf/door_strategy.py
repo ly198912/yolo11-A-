@@ -60,7 +60,6 @@ def choose_best_door(
 
     reverse_direction = opposite_direction(last_direction)
     candidates: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []
-    fallback: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []
 
     for door in doors:
         dx, dy = _axis_offsets(player_center, door.center)
@@ -95,7 +94,6 @@ def choose_best_door(
         score = (-forward + reverse_penalty, sideways, abs_dx + abs_dy)
         if match:
             candidates.append((score, door))
-        fallback.append((score, door))
 
     if candidates:
         candidates.sort(key=lambda item: item[0])

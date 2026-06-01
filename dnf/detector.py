@@ -28,13 +28,13 @@ class Detector:
             "boss": 0.75,
             "door": 0.75,
             "goods": 0.75,
-            "money": 0.75,
+            "money": 0.85,
             "monster": 0.75,
             "player": 0.55,
         }
 
         self.device = device_type or ("0" if torch.cuda.is_available() else "cpu")
-        self.weights = str(Path(__file__).resolve().parent / "shzn.pt")
+        self.weights = str(Path(__file__).resolve().parent / "ldd.pt")
         self.model = YOLO(self.weights)
         self.names = self.model.names
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.names))]

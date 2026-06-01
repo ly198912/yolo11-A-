@@ -167,11 +167,11 @@ def main() -> None:
         )
         game.run()
 
-        display = cv2.resize(img, (640, 360))
-        cv2.imshow("112233", display)
+        display_frame = img
         if DEBUG_MINIMAP:
-            minimap_debug = navigator.draw_debug_minimap(frame_bgr)
-            cv2.imshow("dnf-minimap-debug", cv2.resize(minimap_debug, (432, 252), interpolation=cv2.INTER_NEAREST))
+            display_frame = navigator.draw_debug_overlay(display_frame, source_frame=frame_bgr)
+        display = cv2.resize(display_frame, (640, 360))
+        cv2.imshow("112233", display)
         logger.info("处理时间: {}", time.time() - start_time)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

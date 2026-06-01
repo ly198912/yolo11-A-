@@ -42,9 +42,8 @@ def main() -> None:
         )
 
         if annotated is not None:
-            minimap = navigator.draw_debug_minimap(frame_bgr)
-            cv2.imshow("dnf-route-frame", cv2.resize(annotated, (800, 450)))
-            cv2.imshow("dnf-route-minimap", cv2.resize(minimap, (432, 252), interpolation=cv2.INTER_NEAREST))
+            display_frame = navigator.draw_debug_overlay(annotated, source_frame=frame_bgr)
+            cv2.imshow("dnf-route-frame", cv2.resize(display_frame, (800, 450)))
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
