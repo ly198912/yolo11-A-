@@ -91,7 +91,31 @@ route: map=generic, current=(0, 1), boss=None, query=(2, 1), elite=None, down=No
 
 ```powershell
 $env:DNF_DEBUG_MINIMAP="1"
+
+# 只识别和保存调试包，不执行移动、攻击、拾取
+$env:DNF_DRY_RUN="1"
+
+# dry-run 只跑几帧就自动退出，方便先拿调试包
+$env:DNF_MAX_FRAMES="3"
+
+# 只识别和保存调试包，不执行移动、攻击、拾取
+$env:DNF_DRY_RUN="1"
+
+# 保存小地图寻路调试包，每份包含一张 PNG 和一份 JSON
+$env:DNF_DEBUG_ROUTE_DIR="D:\yolo\yolo11\output\dnf_route_debug"
+
+# 每隔多少帧保存一次调试包，默认 30
+$env:DNF_DEBUG_ROUTE_EVERY="30"
+ 
 python -m dnf.main
+
+# 离线检查某一帧为什么这么走
+python -m dnf.route_debug D:\yolo\yolo11\output\dnf_route_debug
+
+# 调试目录里 route_*.png 是小地图局部，route_*_frame.png 是原截图上的篮筐外框
+
+# 更安全：只分析一张已保存截图，不启动主循环
+python -m dnf.route_probe D:\yolo\yolo11\output\example_screenshot.png --out D:\yolo\yolo11\output\dnf_route_probe --map generic
 ```
 
 程序会显示 `dnf-minimap-debug` 窗口。
@@ -119,16 +143,17 @@ python -m dnf.main
 
 ```python
 MAP_SPECS = {
-    "generic": MapSpec(
-        name="generic",
-        crop_rect_1067=(893, 52, 1055, 142),
-        crop_rect_800=(680, 57, 780, 155),
-        minimap_width=162,
-        minimap_height=90,
-        rows=5,
-        cols=9,
-        room_grid=_all_walkable(5, 9),
-        room_rect_800=(686, 82, 776, 151),
+    "universal": MapSpec(
+        name="universal",
+        crop_rect_1067=(747, 0, 1067, 210),
+        crop_rect_800=(560, 0, 800, 210),
+        minimap_width=240,
+        minimap_height=210,
+        rows=1,
+        cols=1,
+        room_grid=_all_walkable(1, 1),
+        room_rect_1067=(747, 0, 1067, 210),
+        room_rect_800=(560, 0, 800, 210),
     ),
 }
 ```
@@ -145,15 +170,14 @@ MAP_SPECS = {
   - 在 800x600 客户端截图里的小地图裁切区域。
   - 如果这个地图没有 800 分辨率配置，可以写 `None`。
 - `minimap_width` / `minimap_height`
-  - 小地图预期宽高。
-  - 当前主要作为规格记录，核心裁切还是看 `crop_rect_*`。
+  - 小地图篮筐框预期宽高。
+  - 当前默认用大篮筐兜住整个右上小地图 UI，核心裁切还是看 `crop_rect_*`。
 - `rows` / `cols`
-  - 房间网格的行数和列数。
-  - 比如 4 行 5 列就是 `rows=4, cols=5`。
+  - 篮筐模式下只保留外框，默认是 `rows=1, cols=1`。
+  - 如果以后重新启用房间级路线，再按实际小地图房间数恢复成多行多列。
 - `room_grid`
-  - 寻路网格。
-  - `0` 表示可走，`1` 表示不可走。
-  - 全部可走可以用 `_all_walkable(rows, cols)`。
+  - 篮筐模式下只是兼容字段，默认 `[[0]]`。
+  - 当前运行主流程靠 YOLO + 局部 A*，不依赖这里的房间格子。
 - `room_rect_1067`
   - 在 1067x600 客户端截图里的房间网格区域。
   - 不是整个小地图，而是房间格子所在区域。
@@ -167,23 +191,23 @@ MAP_SPECS = {
 例如：
 
 ```python
-crop_rect_800=(680, 57, 780, 155)
+crop_rect_800=(560, 0, 800, 210)
 ```
 
 意思是从 800x600 的游戏截图里裁：
 
-- 左上角：`x=680, y=57`
-- 右下角：`x=780, y=155`
+- 左上角：`x=560, y=0`
+- 右下角：`x=800, y=210`
 
 `room_rect_*` 是在整张游戏截图坐标系下，标出小地图里真正用于计算房间格子的区域。
 
 例如：
 
 ```python
-room_rect_800=(686, 82, 776, 151)
+room_rect_800=(560, 0, 800, 210)
 ```
 
-意思是小地图里只有这块区域参与房间坐标换算。
+意思是整个大篮筐区域都会参与房间坐标换算，确保小地图大小或形状变化时仍然落在框内。
 
 如果 `crop_rect` 对，但 `room_rect` 错，就会出现这种问题：
 
@@ -201,7 +225,7 @@ current=(0, 1), query=(2, 1), direction=DOWN
 
 ```powershell
 $env:DNF_MAP_NAME="generic"
-$env:DNF_MINIMAP_GENERIC_CROP_800="680,57,780,155"
+$env:DNF_MINIMAP_GENERIC_CROP_800="560,0,800,210"
 $env:DNF_DEBUG_MINIMAP="1"
 python -m dnf.main
 ```
@@ -210,7 +234,7 @@ python -m dnf.main
 
 ```powershell
 $env:DNF_MAP_NAME="generic"
-$env:DNF_MINIMAP_GENERIC_CROP_1067="893,52,1055,142"
+$env:DNF_MINIMAP_GENERIC_CROP_1067="747,0,1067,210"
 $env:DNF_DEBUG_MINIMAP="1"
 python -m dnf.main
 ```
@@ -218,7 +242,7 @@ python -m dnf.main
 如果不带地图名前缀，也可以设全局值：
 
 ```powershell
-$env:DNF_MINIMAP_CROP_800="680,57,780,155"
+$env:DNF_MINIMAP_CROP_800="560,0,800,210"
 ```
 
 优先级是：
@@ -237,7 +261,7 @@ $env:DNF_MINIMAP_CROP_800="680,57,780,155"
 
 ```powershell
 $env:DNF_MAP_NAME="generic"
-$env:DNF_MINIMAP_GENERIC_ROOM_800="686,82,776,151"
+$env:DNF_MINIMAP_GENERIC_ROOM_800="560,0,800,210"
 $env:DNF_DEBUG_MINIMAP="1"
 python -m dnf.main
 ```
@@ -521,16 +545,16 @@ $env:DNF_MAP_NAME="generic"
 $env:DNF_DEBUG_MINIMAP="1"
 
 # 临时覆盖某张地图的 800 分辨率小地图裁切
-$env:DNF_MINIMAP_GENERIC_CROP_800="680,57,780,155"
+$env:DNF_MINIMAP_GENERIC_CROP_800="560,0,800,210"
 
 # 临时覆盖某张地图的 1067 分辨率小地图裁切
-$env:DNF_MINIMAP_GENERIC_CROP_1067="893,52,1055,142"
+$env:DNF_MINIMAP_GENERIC_CROP_1067="747,0,1067,210"
 
 # 临时覆盖某张地图的 800 分辨率房间网格区域
-$env:DNF_MINIMAP_GENERIC_ROOM_800="686,82,776,151"
+$env:DNF_MINIMAP_GENERIC_ROOM_800="560,0,800,210"
 
 # 临时覆盖某张地图的 1067 分辨率房间网格区域
-$env:DNF_MINIMAP_GENERIC_ROOM_1067="893,52,1055,142"
+$env:DNF_MINIMAP_GENERIC_ROOM_1067="747,0,1067,210"
 
 # 开启问号颜色兜底，默认不建议
 $env:DNF_QUERY_COLOR_FALLBACK="1"

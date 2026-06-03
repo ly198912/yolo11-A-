@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,8 +42,8 @@ MARKER_THRESHOLDS = {
 ROBUST_TEMPLATE_SCALES = (0.88, 0.94, 1.0, 1.06, 1.12)
 AUTO_MAP_SWITCH_MARGIN = 0.08
 QUERY_COLOR_FALLBACK_ENABLED = os.getenv("DNF_QUERY_COLOR_FALLBACK", "0") == "1"
-QUERY_CONFIRM_FRAMES = 10
-QUERY_MISS_TOLERANCE_FRAMES = 2
+QUERY_CONFIRM_SECONDS = 9.0 / 15.0
+QUERY_MISS_TOLERANCE_SECONDS = 2.0 / 15.0
 
 
 @dataclass
@@ -122,9 +123,11 @@ class MiniMapNavigator:
         self._pending_query_room: Optional[Point] = None
         self._pending_query_marker: Optional[Tuple[float, float]] = None
         self._pending_query_frames = 0
+        self._pending_query_started_at: Optional[float] = None
         self._confirmed_query_room: Optional[Point] = None
         self._confirmed_query_marker: Optional[Tuple[float, float]] = None
         self._query_missing_frames = 0
+        self._confirmed_query_seen_at: Optional[float] = None
         self._last_player_center: Optional[Tuple[float, float]] = None
 
     def _set_active_map(self, map_name: str) -> None:
@@ -394,7 +397,7 @@ class MiniMapNavigator:
             if room_distance > max_room_distance:
                 rejected_rooms.add(room)
                 continue
-            candidates.append((room_distance, -score, room, (x, y)))
+            candidates.append((-score, room_distance, room, (x, y)))
 
         if not candidates:
             if rejected_rooms:
@@ -434,10 +437,12 @@ class MiniMapNavigator:
         query_room: Optional[Point],
         query_marker: Optional[Tuple[float, float]],
     ) -> Tuple[Optional[Point], Optional[Tuple[float, float]]]:
+        now = time.monotonic()
         if query_room is None:
             self._pending_query_room = None
             self._pending_query_marker = None
             self._pending_query_frames = 0
+            self._pending_query_started_at = None
         elif query_room == self._pending_query_room:
             self._pending_query_frames += 1
             self._pending_query_marker = query_marker
@@ -445,34 +450,53 @@ class MiniMapNavigator:
             self._pending_query_room = query_room
             self._pending_query_marker = query_marker
             self._pending_query_frames = 1
+            self._pending_query_started_at = now
 
         if query_room == self._confirmed_query_room:
             self._query_missing_frames = 0
             self._confirmed_query_marker = query_marker
+            self._confirmed_query_seen_at = now
             return self._confirmed_query_room, self._confirmed_query_marker
 
-        if query_room is not None and self._pending_query_frames >= QUERY_CONFIRM_FRAMES:
-            logger.info("query marker confirmed after {} frames: {}", self._pending_query_frames, query_room)
+        pending_started_at = self._pending_query_started_at
+        pending_seconds = 0.0 if pending_started_at is None else now - pending_started_at
+        if query_room is not None and pending_seconds >= QUERY_CONFIRM_SECONDS:
+            logger.info(
+                "query marker confirmed after {} frames ({:.2f}s): {}",
+                self._pending_query_frames,
+                pending_seconds,
+                query_room,
+            )
             self._confirmed_query_room = query_room
             self._confirmed_query_marker = query_marker
             self._query_missing_frames = 0
+            self._confirmed_query_seen_at = now
             return self._confirmed_query_room, self._confirmed_query_marker
 
         if self._confirmed_query_room is not None:
             self._query_missing_frames += 1
-            if self._query_missing_frames <= QUERY_MISS_TOLERANCE_FRAMES:
+            confirmed_seen_at = self._confirmed_query_seen_at
+            missing_seconds = 0.0 if confirmed_seen_at is None else now - confirmed_seen_at
+            if missing_seconds <= QUERY_MISS_TOLERANCE_SECONDS:
                 return self._confirmed_query_room, self._confirmed_query_marker
-            logger.info("query marker expired after {} missing frames: {}", self._query_missing_frames, self._confirmed_query_room)
+            logger.info(
+                "query marker expired after {} missing frames ({:.2f}s): {}",
+                self._query_missing_frames,
+                missing_seconds,
+                self._confirmed_query_room,
+            )
             self._confirmed_query_room = None
             self._confirmed_query_marker = None
             self._query_missing_frames = 0
+            self._confirmed_query_seen_at = None
 
         if query_room is not None:
             logger.info(
-                "query marker pending confirmation: room={}, frames={}/{}",
+                "query marker pending confirmation: room={}, frames={}, seconds={:.2f}/{:.2f}",
                 query_room,
                 self._pending_query_frames,
-                QUERY_CONFIRM_FRAMES,
+                pending_seconds,
+                QUERY_CONFIRM_SECONDS,
             )
         return None, None
 
@@ -662,6 +686,31 @@ class MiniMapNavigator:
         return doors
 
     @staticmethod
+    def _fallback_edge_door_for_direction(
+        doors: Sequence[DoorCandidate],
+        direction: str,
+        frame_width: int,
+        frame_height: int,
+    ) -> Optional[DoorCandidate]:
+        if not doors:
+            return None
+
+        direction = direction.lower()
+        if direction == "right":
+            candidates = [door for door in doors if door.center[0] >= frame_width * 0.55]
+            return max(candidates, key=lambda door: door.center[0]) if candidates else None
+        if direction == "left":
+            candidates = [door for door in doors if door.center[0] <= frame_width * 0.45]
+            return min(candidates, key=lambda door: door.center[0]) if candidates else None
+        if direction == "down":
+            candidates = [door for door in doors if door.center[1] >= frame_height * 0.55]
+            return max(candidates, key=lambda door: door.center[1]) if candidates else None
+        if direction == "up":
+            candidates = [door for door in doors if door.center[1] <= frame_height * 0.45]
+            return min(candidates, key=lambda door: door.center[1]) if candidates else None
+        return None
+
+    @staticmethod
     def _direction_to_screen_target(
         player_center: Tuple[float, float],
         target_center: Tuple[float, float],
@@ -806,6 +855,20 @@ class MiniMapNavigator:
                 expected_direction=next_room_direction,
                 last_direction=self.last_direction,
             )
+            if selected_door is None:
+                selected_door = self._fallback_edge_door_for_direction(
+                    door_candidates,
+                    next_room_direction,
+                    frame_bgr.shape[1],
+                    frame_bgr.shape[0],
+                )
+                if selected_door is not None:
+                    logger.info(
+                        "use edge-side fallback door: direction={}, player={}, door={}",
+                        next_room_direction,
+                        player_center,
+                        selected_door.center,
+                    )
             if selected_door is not None:
                 selected_door_center = selected_door.center
                 self.last_direction = next_room_direction

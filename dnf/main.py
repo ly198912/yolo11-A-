@@ -20,7 +20,11 @@ from loguru import logger
 
 from dnf.game import Game
 from dnf.minimap_nav import MiniMapNavigator
-from dnf.ui_detector import handle_retry_challenge_prompt
+from dnf.ui_detector import (
+    handle_end_reward_screen,
+    handle_retry_challenge_prompt,
+    handle_reward_selection_screen,
+)
 
 temp = pathlib.PosixPath
 pathlib.PosixPath = pathlib.WindowsPath
@@ -31,6 +35,8 @@ from dnf.detector import Detector
 WINDOW_OFFSET_X = 10
 WINDOW_OFFSET_Y = 10
 DEBUG_MINIMAP = os.getenv("DNF_DEBUG_MINIMAP", "0") == "1"
+TARGET_FPS = 9.0
+TARGET_FRAME_SECONDS = 1.0 / TARGET_FPS
 WINDOW_TITLE_KEYWORD = "地下城与勇士"
 WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}
 
@@ -91,6 +97,17 @@ def _place_window(hwnd: int) -> None:
     )
 
 
+def _focus_window(hwnd: int) -> None:
+    if win32gui.GetForegroundWindow() == hwnd:
+        return
+
+    try:
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        win32gui.SetForegroundWindow(hwnd)
+    except win32gui.error as exc:
+        logger.warning("failed to focus DNF window: {}", exc)
+
+
 def _get_client_region(hwnd: int) -> Tuple[int, int, int, int]:
     left_top = win32gui.ClientToScreen(hwnd, (0, 0))
     client_rect = win32gui.GetClientRect(hwnd)
@@ -110,6 +127,14 @@ def _capture_client(hwnd: int) -> Tuple[np.ndarray, Tuple[int, int]]:
     return img_np, (width, height)
 
 
+def _limit_frame_rate(frame_started_at: float) -> float:
+    remaining = TARGET_FRAME_SECONDS - (time.perf_counter() - frame_started_at)
+    if remaining > 0:
+        time.sleep(remaining)
+        return remaining
+    return 0.0
+
+
 def main() -> None:
     device_type = ""
     detector = Detector(device_type)
@@ -118,65 +143,88 @@ def main() -> None:
     hwnd = _find_dnf_window()
     _place_window(hwnd)
 
-    while True:
-        start_time = time.time()
-        try:
-            img_np, (width, height) = _capture_client(hwnd)
-        except Exception as exc:
-            logger.exception("截图失败: {}", exc)
-            time.sleep(0.2)
-            continue
+    try:
+        while True:
+            start_time = time.time()
+            frame_started_at = time.perf_counter()
+            try:
+                img_np, (width, height) = _capture_client(hwnd)
+            except Exception as exc:
+                logger.exception("截图失败: {}", exc)
+                time.sleep(0.2)
+                continue
 
-        if handle_retry_challenge_prompt(img_np):
+            if handle_reward_selection_screen(img_np):
+                logger.info("处理时间: {}", time.time() - start_time)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+                _limit_frame_rate(frame_started_at)
+                continue
+
+            if handle_retry_challenge_prompt(img_np):
+                logger.info("处理时间: {}", time.time() - start_time)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+                _limit_frame_rate(frame_started_at)
+                continue
+
+            if handle_end_reward_screen(img_np):
+                logger.info("处理时间: {}", time.time() - start_time)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+                _limit_frame_rate(frame_started_at)
+                continue
+
+            img, obj = detector.detect(img_np)
+            logger.info("obj: {}", obj)
+
+            frame_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+            route_snapshot = navigator.build_route_snapshot(frame_bgr, obj or [])
+            route_direction = (
+                route_snapshot.next_room_direction.upper()
+                if route_snapshot.next_room_direction
+                else None
+            )
+            logger.info(
+                "route: map={}, current={}, boss={}, query={}, elite={}, down={}, target={}@{}, direction={}, door={}, scores={}",
+                navigator.map_name,
+                route_snapshot.current_room,
+                route_snapshot.boss_room,
+                route_snapshot.query_room,
+                route_snapshot.elite_room,
+                route_snapshot.down_room,
+                route_snapshot.target_kind,
+                route_snapshot.target_room,
+                route_direction,
+                route_snapshot.selected_door_center,
+                route_snapshot.debug_scores,
+            )
+
+            game = Game(
+                obj,
+                width,
+                height,
+                route_direction,
+                route_snapshot.selected_door_center,
+            )
+            _focus_window(hwnd)
+            game.run()
+
+            display_frame = img
+            if DEBUG_MINIMAP:
+                display_frame = navigator.draw_debug_overlay(display_frame, source_frame=frame_bgr)
+            display = cv2.resize(display_frame, (640, 360))
+            cv2.imshow("112233", display)
             logger.info("处理时间: {}", time.time() - start_time)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
-            continue
+            _limit_frame_rate(frame_started_at)
 
-        img, obj = detector.detect(img_np)
-        logger.info("obj: {}", obj)
-
-        frame_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-        route_snapshot = navigator.build_route_snapshot(frame_bgr, obj or [])
-        route_direction = (
-            route_snapshot.next_room_direction.upper()
-            if route_snapshot.next_room_direction
-            else None
-        )
-        logger.info(
-            "route: map={}, current={}, boss={}, query={}, elite={}, down={}, target={}@{}, direction={}, door={}, scores={}",
-            navigator.map_name,
-            route_snapshot.current_room,
-            route_snapshot.boss_room,
-            route_snapshot.query_room,
-            route_snapshot.elite_room,
-            route_snapshot.down_room,
-            route_snapshot.target_kind,
-            route_snapshot.target_room,
-            route_direction,
-            route_snapshot.selected_door_center,
-            route_snapshot.debug_scores,
-        )
-
-        game = Game(
-            obj,
-            width,
-            height,
-            route_direction,
-            route_snapshot.selected_door_center,
-        )
-        game.run()
-
-        display_frame = img
-        if DEBUG_MINIMAP:
-            display_frame = navigator.draw_debug_overlay(display_frame, source_frame=frame_bgr)
-        display = cv2.resize(display_frame, (640, 360))
-        cv2.imshow("112233", display)
-        logger.info("处理时间: {}", time.time() - start_time)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cv2.destroyAllWindows()
+    except KeyboardInterrupt:
+        logger.info("收到中断信号，释放方向键并退出")
+    finally:
+        Game.release_all_movement_keys()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

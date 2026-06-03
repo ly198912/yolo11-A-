@@ -20,7 +20,9 @@ from ultralytics.utils.plotting import Annotator
 class Detector:
     def __init__(self, device_type: str = ""):
         self.img_size = 640
-        self.conf_thres = 0.45
+        # Money and monster detections can score lower during combat effects.
+        # Per-class filtering below keeps the relaxed inference threshold scoped.
+        self.conf_thres = 0.35
         self.iou_thres = 0.45
         self.hide_labels = False
         self.hide_conf = False
@@ -28,8 +30,8 @@ class Detector:
             "boss": 0.75,
             "door": 0.75,
             "goods": 0.75,
-            "money": 0.85,
-            "monster": 0.75,
+            "money": 0.35,
+            "monster": 0.55,
             "player": 0.55,
         }
 
