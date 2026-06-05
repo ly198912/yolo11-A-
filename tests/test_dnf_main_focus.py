@@ -42,6 +42,33 @@ def test_focus_window_does_nothing_when_dnf_already_has_focus(monkeypatch):
     assert events == []
 
 
+def test_focus_window_clicks_title_area_when_set_foreground_fails(monkeypatch):
+    events = []
+
+    monkeypatch.setattr("dnf.main.win32gui.GetForegroundWindow", lambda: 123)
+    monkeypatch.setattr(
+        "dnf.main.win32gui.ShowWindow",
+        lambda hwnd, command: events.append(("show", hwnd, command)),
+    )
+
+    def fail_focus(hwnd):
+        events.append(("focus", hwnd))
+        raise RuntimeError("focus blocked")
+
+    monkeypatch.setattr("dnf.main.win32gui.SetForegroundWindow", fail_focus)
+    monkeypatch.setattr("dnf.main.win32gui.error", RuntimeError)
+    monkeypatch.setattr("dnf.main.win32gui.GetWindowRect", lambda hwnd: (10, 20, 210, 420))
+    monkeypatch.setattr("dnf.main.pyautogui.click", lambda x, y: events.append(("click", x, y)))
+
+    _focus_window(456)
+
+    assert events == [
+        ("show", 456, 9),
+        ("focus", 456),
+        ("click", 110, 32),
+    ]
+
+
 def test_limit_frame_rate_sleeps_only_when_loop_is_faster_than_target(monkeypatch):
     sleeps = []
 

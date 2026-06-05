@@ -39,8 +39,8 @@ def test_try_again_handler_waits_random_delay_and_presses_num6(monkeypatch):
     monkeypatch.setattr(ui_detector.time, "time", lambda: 10.0)
     monkeypatch.setattr(ui_detector.random, "uniform", lambda start, end: 0.73)
     monkeypatch.setattr(ui_detector.time, "sleep", lambda seconds: events.append(("sleep", seconds)))
-    monkeypatch.setattr(ui_detector.pydirectinput, "keyUp", lambda key: events.append(("up", key)))
-    monkeypatch.setattr(ui_detector.pydirectinput, "keyDown", lambda key: events.append(("down", key)))
+    monkeypatch.setattr(ui_detector.input_backend, "keyUp", lambda key: events.append(("up", key)))
+    monkeypatch.setattr(ui_detector.input_backend, "press", lambda key: events.append(("press", key)))
 
     assert ui_detector.handle_retry_challenge_prompt(np.zeros((120, 180, 3), dtype=np.uint8)) is True
 
@@ -50,9 +50,7 @@ def test_try_again_handler_waits_random_delay_and_presses_num6(monkeypatch):
         ("up", "left"),
         ("up", "right"),
         ("sleep", 0.73),
-        ("down", "num6"),
-        ("sleep", 0.08),
-        ("up", "num6"),
+        ("press", "num6"),
     ]
 
 
@@ -65,8 +63,8 @@ def test_reward_handler_waits_random_delay_and_presses_random_reward_key(monkeyp
     monkeypatch.setattr(ui_detector.random, "uniform", lambda start, end: 1.62)
     monkeypatch.setattr(ui_detector.random, "randint", lambda start, end: 3)
     monkeypatch.setattr(ui_detector.time, "sleep", lambda seconds: events.append(("sleep", seconds)))
-    monkeypatch.setattr(ui_detector.pydirectinput, "keyUp", lambda key: events.append(("up", key)))
-    monkeypatch.setattr(ui_detector.pydirectinput, "keyDown", lambda key: events.append(("down", key)))
+    monkeypatch.setattr(ui_detector.input_backend, "keyUp", lambda key: events.append(("up", key)))
+    monkeypatch.setattr(ui_detector.input_backend, "press", lambda key: events.append(("press", key)))
 
     assert ui_detector.handle_reward_selection_screen(np.zeros((120, 180, 3), dtype=np.uint8)) is True
 
@@ -76,9 +74,7 @@ def test_reward_handler_waits_random_delay_and_presses_random_reward_key(monkeyp
         ("up", "left"),
         ("up", "right"),
         ("sleep", 1.62),
-        ("down", "3"),
-        ("sleep", 0.08),
-        ("up", "3"),
+        ("press", "3"),
     ]
 
 

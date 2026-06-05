@@ -10,7 +10,7 @@ import random
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
-import pydirectinput
+from dnf import input_backend
 from loguru import logger
 
 
@@ -96,12 +96,16 @@ class Game:
 
     @classmethod
     def release_all_movement_keys(cls) -> None:
+        try:
+            input_backend.release_all_keys()
+        except Exception as exc:
+            logger.warning("failed to release all keys through backend: {}", exc)
         for key in ("up", "down", "left", "right"):
             try:
                 try:
-                    pydirectinput.keyUp(key, _pause=False)
+                    input_backend.keyUp(key, _pause=False)
                 except TypeError:
-                    pydirectinput.keyUp(key)
+                    input_backend.keyUp(key)
             except Exception as exc:
                 logger.warning("failed to release movement key {}: {}", key, exc)
         cls._motion_active = False
@@ -121,15 +125,15 @@ class Game:
 
     def _key_down(self, key: str) -> None:
         try:
-            pydirectinput.keyDown(key, _pause=False)
+            input_backend.keyDown(key, _pause=False)
         except TypeError:
-            pydirectinput.keyDown(key)
+            input_backend.keyDown(key)
 
     def _key_up(self, key: str) -> None:
         try:
-            pydirectinput.keyUp(key, _pause=False)
+            input_backend.keyUp(key, _pause=False)
         except TypeError:
-            pydirectinput.keyUp(key)
+            input_backend.keyUp(key)
 
     def _hold_direction(self, direction: str, seconds: float = 0.8) -> None:
         key = direction.lower()

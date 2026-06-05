@@ -6,8 +6,8 @@ from dnf.game import Game
 def test_hold_direction_releases_pressed_key_when_interrupted(monkeypatch):
     events = []
 
-    monkeypatch.setattr("dnf.game.pydirectinput.keyDown", lambda key: events.append(("down", key)))
-    monkeypatch.setattr("dnf.game.pydirectinput.keyUp", lambda key: events.append(("up", key)))
+    monkeypatch.setattr("dnf.game.input_backend.keyDown", lambda key: events.append(("down", key)))
+    monkeypatch.setattr("dnf.game.input_backend.keyUp", lambda key: events.append(("up", key)))
     monkeypatch.setattr(
         "dnf.game.time.sleep",
         lambda seconds: (_ for _ in ()).throw(KeyboardInterrupt()) if seconds == 0.8 else None,
@@ -22,7 +22,9 @@ def test_hold_direction_releases_pressed_key_when_interrupted(monkeypatch):
     assert events == [("down", "right"), ("up", "right")]
 
 
-def test_run_does_not_execute_fallback_move_after_handled_exception():
+def test_run_does_not_execute_fallback_move_after_handled_exception(monkeypatch):
+    monkeypatch.setattr("dnf.game.input_backend.keyUp", lambda key, _pause=None: None)
+
     class BrokenGame(Game):
         def __init__(self):
             super().__init__([], 800, 600)

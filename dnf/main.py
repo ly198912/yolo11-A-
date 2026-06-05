@@ -18,6 +18,7 @@ import win32con
 import win32gui
 from loguru import logger
 
+from dnf import input_backend
 from dnf.game import Game
 from dnf.minimap_nav import MiniMapNavigator
 from dnf.ui_detector import (
@@ -37,6 +38,7 @@ WINDOW_OFFSET_Y = 10
 DEBUG_MINIMAP = os.getenv("DNF_DEBUG_MINIMAP", "0") == "1"
 TARGET_FPS = 9.0
 TARGET_FRAME_SECONDS = 1.0 / TARGET_FPS
+RUN_SECONDS = float(os.getenv("DNF_RUN_SECONDS", "0") or "0")
 WINDOW_TITLE_KEYWORD = "地下城与勇士"
 WINDOW_CLASS_NAMES = {"地下城与勇士", "地下城与勇士创新世纪"}
 
@@ -106,6 +108,11 @@ def _focus_window(hwnd: int) -> None:
         win32gui.SetForegroundWindow(hwnd)
     except win32gui.error as exc:
         logger.warning("failed to focus DNF window: {}", exc)
+        try:
+            left, top, right, _ = win32gui.GetWindowRect(hwnd)
+            pyautogui.click(int((left + right) / 2), int(top + 12))
+        except Exception as click_exc:
+            logger.warning("failed to focus DNF window by click: {}", click_exc)
 
 
 def _get_client_region(hwnd: int) -> Tuple[int, int, int, int]:
@@ -136,6 +143,7 @@ def _limit_frame_rate(frame_started_at: float) -> float:
 
 
 def main() -> None:
+    input_backend.log_backend_info()
     device_type = ""
     detector = Detector(device_type)
     navigator = MiniMapNavigator(os.getenv("DNF_MAP_NAME", "auto"))
@@ -144,7 +152,12 @@ def main() -> None:
     _place_window(hwnd)
 
     try:
+        loop_started_at = time.time()
         while True:
+            if RUN_SECONDS > 0 and time.time() - loop_started_at >= RUN_SECONDS:
+                logger.info("reached DNF_RUN_SECONDS={} seconds, release movement keys and exit", RUN_SECONDS)
+                break
+
             start_time = time.time()
             frame_started_at = time.perf_counter()
             try:
@@ -224,6 +237,7 @@ def main() -> None:
         logger.info("收到中断信号，释放方向键并退出")
     finally:
         Game.release_all_movement_keys()
+        input_backend.close()
         cv2.destroyAllWindows()
 
 

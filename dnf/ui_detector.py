@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import cv2
 import numpy as np
-import pydirectinput
+from dnf import input_backend
 from loguru import logger
 
 
@@ -24,20 +24,17 @@ _reward_template_gray: Optional[np.ndarray] = None
 
 
 def _press_key(key: str) -> None:
-    pydirectinput.keyDown(key)
-    time.sleep(0.08)
-    pydirectinput.keyUp(key)
+    input_backend.press(key)
 
 
 def _press_numpad_6() -> None:
-    pydirectinput.KEYBOARD_MAPPING.setdefault("num6", 0x4D)
     _press_key("num6")
 
 
 def _release_movement_keys() -> None:
     for key in ("up", "down", "left", "right"):
         try:
-            pydirectinput.keyUp(key)
+            input_backend.keyUp(key)
         except Exception as exc:
             logger.warning("failed to release movement key {}: {}", key, exc)
 

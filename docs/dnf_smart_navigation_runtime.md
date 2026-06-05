@@ -31,7 +31,7 @@ run_dnf_with_diagnostics.bat
 缺少依赖时执行：
 
 ```powershell
-pip install mss pywin32 pydirectinput
+pip install mss pywin32
 ```
 
 YOLO 原有依赖仍然需要保留。
