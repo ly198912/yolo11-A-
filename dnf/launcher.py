@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import os
@@ -7,15 +6,12 @@ import queue
 import subprocess
 import sys
 import threading
-from pathlib import Path
-from typing import Optional
-
 import tkinter as tk
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 from dnf.map_specs import MAP_SPECS
 from dnf.timed_keys import DEFAULT_TIMED_KEY_SPEC, parse_timed_key_spec
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DNF_DIR = Path(__file__).resolve().parent
@@ -76,8 +72,8 @@ class DnfBrushLauncher(tk.Tk):
         self.geometry("1040x760")
         self.minsize(920, 680)
 
-        self.process: Optional[subprocess.Popen[str]] = None
-        self.log_queue: "queue.Queue[str]" = queue.Queue()
+        self.process: subprocess.Popen[str] | None = None
+        self.log_queue: queue.Queue[str] = queue.Queue()
 
         self.map_var = tk.StringVar(value=os.getenv("DNF_MAP_NAME", "universal"))
         self.model_var = tk.StringVar(value=os.getenv("DNF_YOLO_WEIGHTS", "ldd.pt"))
@@ -115,7 +111,9 @@ class DnfBrushLauncher(tk.Tk):
         self.right_search_pixels_var = tk.StringVar(value=os.getenv("DNF_RIGHT_SEARCH_PIXELS", "40"))
         self.route_search_y_amplitude_var = tk.StringVar(value=os.getenv("DNF_ROUTE_SEARCH_Y_AMPLITUDE", "6"))
         self.horizontal_y_deadzone_var = tk.StringVar(value=os.getenv("DNF_HORIZONTAL_MOVE_Y_DEADZONE", "48"))
-        self.horizontal_door_align_distance_var = tk.StringVar(value=os.getenv("DNF_HORIZONTAL_DOOR_ALIGN_DISTANCE", "120"))
+        self.horizontal_door_align_distance_var = tk.StringVar(
+            value=os.getenv("DNF_HORIZONTAL_DOOR_ALIGN_DISTANCE", "120")
+        )
         self.diagonal_y_ratio_var = tk.StringVar(value=os.getenv("DNF_DIAGONAL_Y_RATIO", "0.35"))
         self.move_press_time_var = tk.StringVar(value=os.getenv("DNF_MOVE_PRESS_TIME", "0.16"))
         self.missing_player_threshold_var = tk.StringVar(value=os.getenv("DNF_MISSING_PLAYER_RECOVER_THRESHOLD", "10"))
@@ -166,17 +164,37 @@ class DnfBrushLauncher(tk.Tk):
         style.map("TNotebook.Tab", background=[("selected", "#18a999")], foreground=[("selected", "#ffffff")])
         style.configure("TLabel", background="#ffffff", foreground="#1f2937")
         style.configure("Muted.TLabel", background="#ffffff", foreground="#64748b")
-        style.configure("Title.TLabel", background="#14213d", foreground="#ffffff", font=("Microsoft YaHei UI", 18, "bold"))
-        style.configure("Status.TLabel", background="#14213d", foreground="#fca311", font=("Microsoft YaHei UI", 10, "bold"))
+        style.configure(
+            "Title.TLabel", background="#14213d", foreground="#ffffff", font=("Microsoft YaHei UI", 18, "bold")
+        )
+        style.configure(
+            "Status.TLabel", background="#14213d", foreground="#fca311", font=("Microsoft YaHei UI", 10, "bold")
+        )
         style.configure("TLabelframe", background="#ffffff", bordercolor="#d7dee9", relief="solid")
-        style.configure("TLabelframe.Label", background="#ffffff", foreground="#0f766e", font=("Microsoft YaHei UI", 10, "bold"))
-        style.configure("TEntry", fieldbackground="#fbfdff", foreground="#111827", insertcolor="#111827", bordercolor="#cbd5e1")
+        style.configure(
+            "TLabelframe.Label", background="#ffffff", foreground="#0f766e", font=("Microsoft YaHei UI", 10, "bold")
+        )
+        style.configure(
+            "TEntry", fieldbackground="#fbfdff", foreground="#111827", insertcolor="#111827", bordercolor="#cbd5e1"
+        )
         style.configure("TCombobox", fieldbackground="#fbfdff", foreground="#111827", bordercolor="#cbd5e1")
         style.configure("TCheckbutton", background="#ffffff", foreground="#1f2937")
         style.map("TCheckbutton", background=[("active", "#ffffff")], foreground=[("active", "#0f766e")])
-        style.configure("Accent.TButton", background="#18a999", foreground="#ffffff", padding=(18, 9), font=("Microsoft YaHei UI", 10, "bold"))
+        style.configure(
+            "Accent.TButton",
+            background="#18a999",
+            foreground="#ffffff",
+            padding=(18, 9),
+            font=("Microsoft YaHei UI", 10, "bold"),
+        )
         style.map("Accent.TButton", background=[("active", "#12877b"), ("disabled", "#94a3b8")])
-        style.configure("Danger.TButton", background="#ef476f", foreground="#ffffff", padding=(18, 9), font=("Microsoft YaHei UI", 10, "bold"))
+        style.configure(
+            "Danger.TButton",
+            background="#ef476f",
+            foreground="#ffffff",
+            padding=(18, 9),
+            font=("Microsoft YaHei UI", 10, "bold"),
+        )
         style.map("Danger.TButton", background=[("active", "#d63f64"), ("disabled", "#94a3b8")])
 
     def _build_ui(self) -> None:
@@ -221,7 +239,9 @@ class DnfBrushLauncher(tk.Tk):
         bottom.columnconfigure(2, weight=1)
         self.start_button = ttk.Button(bottom, text="开始刷图", command=self.start_brush, style="Accent.TButton")
         self.start_button.grid(row=0, column=0, padx=(0, 10))
-        self.stop_button = ttk.Button(bottom, text="停止", command=self.stop_brush, state="disabled", style="Danger.TButton")
+        self.stop_button = ttk.Button(
+            bottom, text="停止", command=self.stop_brush, state="disabled", style="Danger.TButton"
+        )
         self.stop_button.grid(row=0, column=1)
         ttk.Label(bottom, text="配置会在启动子进程时生效", style="Status.TLabel").grid(row=0, column=3, sticky="e")
 
@@ -287,13 +307,18 @@ class DnfBrushLauncher(tk.Tk):
         timed.grid(row=1, column=0, sticky="ew")
         for column in range(5):
             timed.columnconfigure(column, weight=1)
-        ttk.Checkbutton(timed, text="启用定时按键", variable=self.timed_keys_enabled_var).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        ttk.Checkbutton(timed, text="启用定时按键", variable=self.timed_keys_enabled_var).grid(
+            row=0, column=0, sticky="w", pady=(0, 10)
+        )
         ttk.Label(timed, text="按键").grid(row=1, column=0, sticky="w")
         ttk.Label(timed, text="间隔最小/最大秒").grid(row=1, column=1, columnspan=2, sticky="w")
         ttk.Label(timed, text="按住最小/最大秒").grid(row=1, column=3, columnspan=2, sticky="w")
 
         rules = parse_timed_key_spec(os.getenv("DNF_TIMED_KEYS", DEFAULT_TIMED_KEY_SPEC))
-        defaults = [(rule.key, str(rule.interval_min), str(rule.interval_max), str(rule.hold_min), str(rule.hold_max)) for rule in rules]
+        defaults = [
+            (rule.key, str(rule.interval_min), str(rule.interval_max), str(rule.hold_min), str(rule.hold_max))
+            for rule in rules
+        ]
         while len(defaults) < 5:
             defaults.append(("", "", "", "", ""))
         for index, values in enumerate(defaults[:5], start=2):
@@ -331,10 +356,16 @@ class DnfBrushLauncher(tk.Tk):
         for column in range(4):
             route.columnconfigure(column, weight=1)
 
-        ttk.Checkbutton(route, text="显示检测画面窗口", variable=self.show_detection_window_var).grid(row=0, column=0, sticky="w")
-        ttk.Checkbutton(route, text="显示小地图调试窗口", variable=self.debug_minimap_var).grid(row=0, column=1, sticky="w")
+        ttk.Checkbutton(route, text="显示检测画面窗口", variable=self.show_detection_window_var).grid(
+            row=0, column=0, sticky="w"
+        )
+        ttk.Checkbutton(route, text="显示小地图调试窗口", variable=self.debug_minimap_var).grid(
+            row=0, column=1, sticky="w"
+        )
         ttk.Checkbutton(route, text="启用 Boss 路线", variable=self.boss_route_var).grid(row=0, column=2, sticky="w")
-        ttk.Checkbutton(route, text="任务点颜色兜底", variable=self.query_color_fallback_var).grid(row=0, column=3, sticky="w")
+        ttk.Checkbutton(route, text="任务点颜色兜底", variable=self.query_color_fallback_var).grid(
+            row=0, column=3, sticky="w"
+        )
         self._entry(route, "地图模板阈值", self.layout_threshold_var, 1, 0)
 
         prompt = ttk.LabelFrame(page, text="奖励/重试提示识别", padding=14)
@@ -378,7 +409,9 @@ class DnfBrushLauncher(tk.Tk):
             pady=8,
         )
 
-    def _combo(self, parent: ttk.Frame, label: str, variable: tk.StringVar, values: list[str], row: int, column: int) -> None:
+    def _combo(
+        self, parent: ttk.Frame, label: str, variable: tk.StringVar, values: list[str], row: int, column: int
+    ) -> None:
         ttk.Label(parent, text=label).grid(row=row, column=column, sticky="w", pady=8)
         ttk.Combobox(parent, textvariable=variable, values=values, state="readonly").grid(
             row=row,
@@ -415,7 +448,9 @@ class DnfBrushLauncher(tk.Tk):
         variables = tuple(tk.StringVar(value=value) for value in values)
         self.timed_key_rows.append(variables)
         for column, variable in enumerate(variables):
-            ttk.Entry(parent, textvariable=variable, width=10).grid(row=row, column=column, sticky="ew", padx=(0, 10), pady=5)
+            ttk.Entry(parent, textvariable=variable, width=10).grid(
+                row=row, column=column, sticky="ew", padx=(0, 10), pady=5
+            )
 
     def _validate_settings(self) -> bool:
         numeric_values: dict[str, tuple[str, type]] = {
