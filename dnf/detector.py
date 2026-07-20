@@ -1,19 +1,19 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 @File    : detector.py
-@Desc    : YOLO11 detector adapter for DNF
+@Desc    : YOLO11 detector adapter for DNF.
 """
+
 from __future__ import annotations
 
 import os
 import random
 from pathlib import Path
-from typing import List, Tuple
 
 import cv2
 import numpy as np
 import torch
+
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
@@ -24,9 +24,7 @@ class Detector:
         self.conf_thres = float(os.getenv("DNF_YOLO_CONF", "0.35"))
         self.iou_thres = float(os.getenv("DNF_YOLO_IOU", "0.45"))
         self.draw_detections = (
-            os.getenv("DNF_DRAW_DETECTIONS", "0") == "1"
-            if draw_detections is None
-            else draw_detections
+            os.getenv("DNF_DRAW_DETECTIONS", "0") == "1" if draw_detections is None else draw_detections
         )
         self.hide_labels = False
         self.hide_conf = False
@@ -65,16 +63,12 @@ class Detector:
         return label
 
     @staticmethod
-    def _xyxy_to_xywh_top_left(xyxy: np.ndarray) -> List[float]:
+    def _xyxy_to_xywh_top_left(xyxy: np.ndarray) -> list[float]:
         x1, y1, x2, y2 = [float(v) for v in xyxy]
         return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]
 
-    def detect(self, img0: np.ndarray) -> Tuple[np.ndarray | None, list | None]:
-        """
-        图片预测。
-        返回:
-        - annotated_bgr: 画好框的 BGR 图像
-        - obj: [{'monster': {'xywh': [x, y, w, h], 'conf': 0.84}}, ...]
+    def detect(self, img0: np.ndarray) -> tuple[np.ndarray | None, list | None]:
+        """图片预测。 返回: - annotated_bgr: 画好框的 BGR 图像 - obj: [{'monster': {'xywh': [x, y, w, h], 'conf': 0.84}}, ...].
         """
         if img0 is None:
             return None, None
