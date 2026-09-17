@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 
 class VirtualKey:
@@ -306,9 +307,7 @@ class VirtualKey:
         "numenter": VK_SEPARATOR,
     }
 
-def get_key_code(key_name: str) -> int|None:
-    """
-    Get the key code of the given key name.
-    """
-    return VirtualKey.key_map.get(key_name.lower())
 
+def get_key_code(key_name: str) -> int | None:
+    """Get the key code of the given key name."""
+    return VirtualKey.key_map.get(key_name.lower())
