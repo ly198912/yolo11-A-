@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import dnf.timed_keys as timed_keys
+from dnf import timed_keys
 from dnf.timed_keys import DEFAULT_TIMED_KEY_SPEC, TimedKeyRule, TimedKeyScheduler, parse_timed_key_spec
 
 
