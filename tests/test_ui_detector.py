@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import dnf.ui_detector as ui_detector
+from dnf import ui_detector
 
 
 def _reset_reward_cache() -> None:
