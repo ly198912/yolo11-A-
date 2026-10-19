@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
-
+from typing import Sequence, Tuple
 
 Point = Tuple[float, float]
 
@@ -13,7 +12,7 @@ class DoorCandidate:
     center: Point
 
 
-def opposite_direction(direction: Optional[str]) -> Optional[str]:
+def opposite_direction(direction: str | None) -> str | None:
     direction = direction.lower() if direction else None
     mapping = {
         "left": "right",
@@ -28,7 +27,7 @@ def opposite_direction(direction: Optional[str]) -> Optional[str]:
     return mapping.get(direction)
 
 
-def _axis_offsets(player: Point, door: Point) -> Tuple[float, float]:
+def _axis_offsets(player: Point, door: Point) -> tuple[float, float]:
     dx = door[0] - player[0]
     dy = door[1] - player[1]
     return dx, dy
@@ -43,27 +42,27 @@ def _direction_match(expected_direction: str, dx: float, dy: float, margin: floa
         return False
     if "up" in parts and dy >= -margin:
         return False
-    if "down" in parts and dy <= margin:
-        return False
-    return True
+    return not ("down" in parts and dy <= margin)
 
 
 def choose_best_door(
     doors: Sequence[DoorCandidate],
     player_center: Point,
-    expected_direction: Optional[str],
-    last_direction: Optional[str] = None,
+    expected_direction: str | None,
+    last_direction: str | None = None,
     margin: float = 16.0,
-) -> Optional[DoorCandidate]:
+) -> DoorCandidate | None:
     if not doors:
         return None
     if expected_direction is None:
-        return min(doors, key=lambda item: abs(item.center[0] - player_center[0]) + abs(item.center[1] - player_center[1]))
+        return min(
+            doors, key=lambda item: abs(item.center[0] - player_center[0]) + abs(item.center[1] - player_center[1])
+        )
 
     expected_direction = expected_direction.lower()
     reverse_direction = opposite_direction(last_direction)
-    candidates: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []
-    fallback: List[Tuple[Tuple[float, float, float], DoorCandidate]] = []
+    candidates: list[tuple[tuple[float, float, float], DoorCandidate]] = []
+    fallback: list[tuple[tuple[float, float, float], DoorCandidate]] = []
 
     for door in doors:
         dx, dy = _axis_offsets(player_center, door.center)
