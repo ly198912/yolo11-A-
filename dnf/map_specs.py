@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
-
+from typing import Tuple
 
 Rect = Tuple[int, int, int, int]
 
@@ -11,17 +10,17 @@ Rect = Tuple[int, int, int, int]
 class MapSpec:
     name: str
     crop_rect_1067: Rect
-    crop_rect_800: Optional[Rect]
+    crop_rect_800: Rect | None
     minimap_width: int
     minimap_height: int
     rows: int
     cols: int
-    room_grid: List[List[int]]
-    room_rect_1067: Optional[Rect] = None
-    room_rect_800: Optional[Rect] = None
+    room_grid: list[list[int]]
+    room_rect_1067: Rect | None = None
+    room_rect_800: Rect | None = None
 
 
-def _all_walkable(rows: int, cols: int) -> List[List[int]]:
+def _all_walkable(rows: int, cols: int) -> list[list[int]]:
     return [[0 for _ in range(cols)] for _ in range(rows)]
 
 
@@ -45,6 +44,6 @@ UNIVERSAL_MINIMAP_SPEC = MapSpec(
 )
 
 
-MAP_SPECS: Dict[str, MapSpec] = {
+MAP_SPECS: dict[str, MapSpec] = {
     "universal": UNIVERSAL_MINIMAP_SPEC,
 }
