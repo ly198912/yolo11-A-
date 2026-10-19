@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Tuple
 
 import cv2
 import numpy as np
@@ -16,7 +16,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from dnf.minimap_nav import MiniMapNavigator
-
 
 MAP_NAME = "universal"
 WINDOW_TITLE_KEYWORD = "地下城与勇士"
@@ -36,7 +35,7 @@ def _clamp_rect(rect: Rect, width: int, height: int) -> Rect:
     return x1, y1, x2, y2
 
 
-def _find_dnf_window() -> Optional[int]:
+def _find_dnf_window() -> int | None:
     candidates = []
 
     def _enum_windows(hwnd: int, _: object) -> None:
@@ -61,7 +60,7 @@ def _find_dnf_window() -> Optional[int]:
     return candidates[0][1]
 
 
-def _capture_dnf_or_screen(hwnd: Optional[int]) -> np.ndarray:
+def _capture_dnf_or_screen(hwnd: int | None) -> np.ndarray:
     if hwnd:
         left_top = win32gui.ClientToScreen(hwnd, (0, 0))
         client_rect = win32gui.GetClientRect(hwnd)
@@ -92,10 +91,10 @@ def _draw_grid(frame_bgr: np.ndarray, navigator: MiniMapNavigator) -> np.ndarray
     cv2.rectangle(output, (rx1, ry1), (rx2 - 1, ry2 - 1), (255, 255, 255), 1)
 
     for col in range(1, navigator.spec.cols):
-        x = int(round(rx1 + (rx2 - rx1) * col / navigator.spec.cols))
+        x = round(rx1 + (rx2 - rx1) * col / navigator.spec.cols)
         cv2.line(output, (x, ry1), (x, ry2 - 1), (255, 255, 255), 1)
     for row in range(1, navigator.spec.rows):
-        y = int(round(ry1 + (ry2 - ry1) * row / navigator.spec.rows))
+        y = round(ry1 + (ry2 - ry1) * row / navigator.spec.rows)
         cv2.line(output, (rx1, y), (rx2 - 1, y), (255, 255, 255), 1)
 
     marker_styles = {
@@ -109,8 +108,8 @@ def _draw_grid(frame_bgr: np.ndarray, navigator: MiniMapNavigator) -> np.ndarray
         marker = room_info.get(key)
         if marker is None:
             continue
-        x = int(round(cx1 + marker[0]))
-        y = int(round(cy1 + marker[1]))
+        x = round(cx1 + marker[0])
+        y = round(cy1 + marker[1])
         cv2.circle(output, (x, y), 4, color, -1)
         cv2.putText(output, label, (x + 5, y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
 
